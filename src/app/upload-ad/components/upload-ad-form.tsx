@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useCallback } from 'react';
@@ -26,7 +27,7 @@ const adFormatOptions = [
 ];
 
 const adSizeOptions = [
-  { value: '', label: 'Select ad size' },
+  // { value: '', label: 'Select ad size' }, // Removed to fix error, placeholder is used in SelectValue
   { value: '300x250', label: '300x250 (Medium Rectangle)' },
   { value: '728x90', label: '728x90 (Leaderboard)' },
   { value: '160x600', label: '160x600 (Wide Skyscraper)' },
@@ -35,7 +36,7 @@ const adSizeOptions = [
 ];
 
 const bidStrategyOptions = [
-  { value: '', label: 'Select bid strategy' },
+  // { value: '', label: 'Select bid strategy' }, // Removed to fix error, placeholder is used in SelectValue
   { value: 'cpc', label: 'Cost Per Click (CPC)' },
   { value: 'cpm', label: 'Cost Per Mille (CPM)' },
   { value: 'cpa', label: 'Cost Per Action (CPA)' },
@@ -462,3 +463,4 @@ const UploadAdForm: React.FC<UploadAdFormProps> = ({ onSubmit }) => {
 };
 
 export default UploadAdForm;
+
