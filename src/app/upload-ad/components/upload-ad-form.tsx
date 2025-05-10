@@ -2,19 +2,20 @@
 "use client";
 
 import React, { useState, useCallback } from 'react';
-import { Upload, X, Plus, Image as ImageIcon, FileText, Film, Calendar, DollarSign, Target, Info, Loader2, Eye } from 'lucide-react';
+import { Upload, X, Plus, Image as ImageIcon, FileText, Film, Calendar, DollarSign, Target, Info, Loader2, Eye, ChevronDown, ChevronUp } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import AdPreview from './ad-preview'; // Import the AdPreview component
+import AdPreview from './ad-preview'; 
 
 interface UploadAdFormProps {
   onSubmit: (data: FormData) => Promise<void>;
@@ -76,7 +77,7 @@ const UploadAdForm: React.FC<UploadAdFormProps> = ({ onSubmit }) => {
   
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [showPreview, setShowPreview] = useState(false); // State for preview dialog
+  const [showPreview, setShowPreview] = useState(false);
 
   const handleDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -119,10 +120,10 @@ const UploadAdForm: React.FC<UploadAdFormProps> = ({ onSubmit }) => {
   
   const getFileIcon = (file: File) => {
     const type = file.type;
-    if (type.startsWith('image/')) return <ImageIcon className="h-6 w-6 text-primary" />;
-    if (type === 'text/html' || type === 'application/javascript') return <FileText className="h-6 w-6 text-orange-500" />;
-    if (type.startsWith('video/')) return <Film className="h-6 w-6 text-purple-500" />;
-    return <FileText className="h-6 w-6 text-muted-foreground" />;
+    if (type.startsWith('image/')) return <ImageIcon className="h-5 w-5 text-primary" />;
+    if (type === 'text/html' || type === 'application/javascript') return <FileText className="h-5 w-5 text-orange-500" />;
+    if (type.startsWith('video/')) return <Film className="h-5 w-5 text-purple-500" />;
+    return <FileText className="h-5 w-5 text-muted-foreground" />;
   };
 
   const resetForm = () => {
@@ -183,7 +184,6 @@ const UploadAdForm: React.FC<UploadAdFormProps> = ({ onSubmit }) => {
       resetForm();
     } catch (error) {
       console.error('Error uploading ad:', error);
-      // Potentially show a toast notification here
     } finally {
       setIsLoading(false);
     }
@@ -204,50 +204,61 @@ const UploadAdForm: React.FC<UploadAdFormProps> = ({ onSubmit }) => {
     adTxtContent,
   };
 
-  const renderSectionTitle = (title: string) => (
-    <h3 className="text-xl font-semibold text-foreground mb-4 pt-6 first:pt-0">{title}</h3>
+  const renderSectionTitle = (title: string, description?: string) => (
+    <div className="mb-6">
+      <h2 className="text-2xl font-semibold text-foreground">{title}</h2>
+      {description && <p className="text-muted-foreground mt-1">{description}</p>}
+    </div>
   );
-
+  
   const renderInfoTooltip = (text: string) => (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-6 w-6 p-0 ml-2 shrink-0">
+        <Button variant="ghost" size="icon" className="h-5 w-5 p-0 ml-2 shrink-0 align-middle">
           <Info className="h-4 w-4 text-muted-foreground" />
         </Button>
       </TooltipTrigger>
-      <TooltipContent className="max-w-xs">
-        <p>{text}</p>
+      <TooltipContent className="max-w-xs bg-background border-border text-foreground shadow-lg rounded-md p-3">
+        <p className="text-sm">{text}</p>
       </TooltipContent>
     </Tooltip>
   );
 
+
+  const FormFieldContainer: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => (
+    <div className={cn("space-y-2", className)}>{children}</div>
+  );
+
   return (
     <>
-      <Card className="shadow-xl">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">Upload New Ad Creative</CardTitle>
+      <Card className="shadow-2xl rounded-xl">
+        <CardHeader className="p-6 sm:p-8 border-b border-border">
+          <CardTitle className="text-3xl font-bold text-primary">Create New Ad</CardTitle>
+          <CardDescription className="text-md text-muted-foreground">Fill in the details below to upload your ad creative.</CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-8">
+        <CardContent className="p-6 sm:p-8">
+          <form onSubmit={handleSubmit} className="space-y-12">
             
-            <div>
-              {renderSectionTitle("Basic Information")}
+            <section>
+              {renderSectionTitle("Core Details", "Essential information about your ad creative.")}
               <div className="space-y-6">
-                <div>
+                <FormFieldContainer>
                   <Label htmlFor="ad-name" className="text-sm font-medium">Ad Name</Label>
-                  <Input id="ad-name" type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Summer Sale Banner" className="mt-1" />
-                </div>
-                <div>
+                  <Input id="ad-name" type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Summer Sale Banner Vol. 2" className="mt-1" />
+                </FormFieldContainer>
+                <FormFieldContainer>
                   <Label htmlFor="ad-description" className="text-sm font-medium">Description</Label>
-                  <Textarea id="ad-description" rows={3} placeholder="Briefly describe the ad creative or campaign" value={description} onChange={(e) => setDescription(e.target.value)} className="mt-1" />
-                </div>
+                  <Textarea id="ad-description" rows={3} placeholder="Briefly describe the ad creative or its campaign goals." value={description} onChange={(e) => setDescription(e.target.value)} className="mt-1" />
+                </FormFieldContainer>
               </div>
-            </div>
+            </section>
 
-            <div>
-              {renderSectionTitle("Ad Specifications")}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
+            <Separator className="my-8" />
+
+            <section>
+              {renderSectionTitle("Ad Specifications", "Define the format and dimensions of your ad.")}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
+                <FormFieldContainer>
                   <Label htmlFor="ad-format" className="text-sm font-medium">Ad Format</Label>
                   <Select value={adFormat} onValueChange={setAdFormat} required>
                     <SelectTrigger id="ad-format" className="mt-1">
@@ -259,8 +270,8 @@ const UploadAdForm: React.FC<UploadAdFormProps> = ({ onSubmit }) => {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-                <div>
+                </FormFieldContainer>
+                <FormFieldContainer>
                   <Label htmlFor="ad-size" className="text-sm font-medium">Ad Size</Label>
                   <Select value={adSize} onValueChange={setAdSize} required>
                     <SelectTrigger id="ad-size" className="mt-1">
@@ -272,192 +283,194 @@ const UploadAdForm: React.FC<UploadAdFormProps> = ({ onSubmit }) => {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
+                </FormFieldContainer>
                 {adSize === 'custom' && (
                   <>
-                    <div>
+                    <FormFieldContainer>
                       <Label htmlFor="custom-width" className="text-sm font-medium">Width (px)</Label>
                       <Input id="custom-width" type="number" min="1" required={adSize === 'custom'} value={customWidth} onChange={(e) => setCustomWidth(e.target.value)} placeholder="e.g., 320" className="mt-1" />
-                    </div>
-                    <div>
+                    </FormFieldContainer>
+                    <FormFieldContainer>
                       <Label htmlFor="custom-height" className="text-sm font-medium">Height (px)</Label>
                       <Input id="custom-height" type="number" min="1" required={adSize === 'custom'} value={customHeight} onChange={(e) => setCustomHeight(e.target.value)} placeholder="e.g., 50" className="mt-1" />
-                    </div>
+                    </FormFieldContainer>
                   </>
                 )}
               </div>
-            </div>
+            </section>
             
-            <Accordion type="multiple" className="w-full space-y-4">
-              <AccordionItem value="advanced-settings" className="border rounded-lg shadow-sm">
-                <AccordionTrigger className="px-4 py-3 text-lg font-medium hover:no-underline">Advanced Settings</AccordionTrigger>
-                <AccordionContent className="px-4 pb-4 space-y-6">
-                  <div className="flex items-start">
-                    <div className="flex-grow">
-                      <Label htmlFor="ad-txt-content" className="text-sm font-medium">Ad.txt Content</Label>
-                      <Textarea id="ad-txt-content" rows={3} placeholder="Enter ad.txt content for authorized digital sellers" value={adTxtContent} onChange={(e) => setAdTxtContent(e.target.value)} className="mt-1" />
-                    </div>
-                    {renderInfoTooltip("Ad.txt is a text file that publishers place on their websites to publicly declare the companies authorized to sell their digital inventory.")}
-                  </div>
-                  <div className="flex items-start">
-                    <div className="flex-grow">
-                      <Label htmlFor="header-code" className="text-sm font-medium">Header Code</Label>
-                      <Textarea id="header-code" rows={3} placeholder="Enter any custom header code or scripts" value={headerCode} onChange={(e) => setHeaderCode(e.target.value)} className="mt-1" />
-                    </div>
-                    {renderInfoTooltip("Custom header code can include tracking pixels, JavaScript tags, or other scripts that need to load before the ad.")}
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Switch id="header-bidding" checked={headerBidding} onCheckedChange={setHeaderBidding} />
-                      <Label htmlFor="header-bidding">Enable Header Bidding</Label>
-                    </div>
-                    <p className="text-xs text-muted-foreground">Allow multiple Supply-Side Platforms (SSPs) to bid on your inventory simultaneously.</p>
-                  </div>
-                  {headerBidding && (
-                    <div>
-                      <Label htmlFor="header-bidding-partners" className="text-sm font-medium">Header Bidding Partners</Label>
-                      <Textarea id="header-bidding-partners" rows={2} placeholder="List your header bidding partners (e.g., Rubicon, AppNexus, PubMatic)" value={headerBiddingPartners} onChange={(e) => setHeaderBiddingPartners(e.target.value)} className="mt-1" />
-                    </div>
-                  )}
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Switch id="fallback-image" checked={fallbackImage} onCheckedChange={setFallbackImage} />
-                      <Label htmlFor="fallback-image">Provide Fallback Image</Label>
-                    </div>
-                     <p className="text-xs text-muted-foreground">Include a backup image if the main ad fails to load. Relevant for HTML5 ads.</p>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
+            <Separator className="my-8" />
 
-              <AccordionItem value="campaign-settings" className="border rounded-lg shadow-sm">
-                <AccordionTrigger className="px-4 py-3 text-lg font-medium hover:no-underline">Campaign Settings</AccordionTrigger>
-                <AccordionContent className="px-4 pb-4 space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex items-end">
-                      <div className="flex-grow">
-                        <Label htmlFor="start-date" className="text-sm font-medium">Start Date</Label>
-                        <Input id="start-date" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="mt-1" />
-                      </div>
-                      <Calendar className="h-5 w-5 text-muted-foreground ml-2 mb-2" />
-                    </div>
-                    <div className="flex items-end">
-                      <div className="flex-grow">
-                        <Label htmlFor="end-date" className="text-sm font-medium">End Date</Label>
-                        <Input id="end-date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="mt-1" />
-                      </div>
-                      <Calendar className="h-5 w-5 text-muted-foreground ml-2 mb-2" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex items-end">
-                      <div className="flex-grow">
-                        <Label htmlFor="budget" className="text-sm font-medium">Budget ($)</Label>
-                        <Input id="budget" type="number" min="0" step="0.01" placeholder="e.g., 500.00" value={budget} onChange={(e) => setBudget(e.target.value)} className="mt-1" />
-                      </div>
-                      <DollarSign className="h-5 w-5 text-muted-foreground ml-2 mb-2" />
-                    </div>
-                    <div className="flex items-end">
-                      <div className="flex-grow">
-                        <Label htmlFor="bid-strategy" className="text-sm font-medium">Bid Strategy</Label>
-                        <Select value={bidStrategy} onValueChange={setBidStrategy}>
-                          <SelectTrigger id="bid-strategy" className="mt-1">
-                            <SelectValue placeholder="Select bid strategy" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {bidStrategyOptions.map(option => (
-                              <SelectItem key={option.value} value={option.value || 'none'}>{option.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      {renderInfoTooltip("The bid strategy determines how you pay for your ad: CPC (cost per click), CPM (cost per thousand impressions), CPA (cost per action), or CPV (cost per view).")}
-                    </div>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="targeting-options" className="border rounded-lg shadow-sm">
-                <AccordionTrigger className="px-4 py-3 text-lg font-medium hover:no-underline">Targeting Options</AccordionTrigger>
-                <AccordionContent className="px-4 pb-4 space-y-6">
-                  <div className="flex items-start">
-                    <div className="flex-grow">
-                      <Label htmlFor="target-audience" className="text-sm font-medium">Target Audience</Label>
-                      <Textarea id="target-audience" rows={2} placeholder="Describe your target audience (e.g., age, interests, demographics)" value={targetAudience} onChange={(e) => setTargetAudience(e.target.value)} className="mt-1" />
-                    </div>
-                    <Target className="h-5 w-5 text-muted-foreground mt-8 ml-2" />
-                  </div>
-                  <div className="flex items-start">
-                    <div className="flex-grow">
-                      <Label htmlFor="target-locations" className="text-sm font-medium">Target Locations</Label>
-                      <Textarea id="target-locations" rows={2} placeholder="List target geographic locations (e.g., countries, regions, cities)" value={targetLocations} onChange={(e) => setTargetLocations(e.target.value)} className="mt-1" />
-                    </div>
-                    {renderInfoTooltip("Specify the geographic locations where you want your ad to be shown. You can target by country, region, city, or even postal code.")}
-                  </div>
-                  <div>
-                    <Label htmlFor="target-devices" className="text-sm font-medium">Target Devices</Label>
-                    <Select value={targetDevices} onValueChange={setTargetDevices}>
-                      <SelectTrigger id="target-devices" className="mt-1">
-                        <SelectValue placeholder="Select target devices" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {deviceOptions.map(option => (
-                          <SelectItem key={option.value} value={option.value || 'none'}>{option.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-
-            <div className="space-y-2">
-              <Label className="block text-sm font-medium">Upload Ad Files</Label>
-              <div
+            <section>
+              {renderSectionTitle("Creative Files", "Upload your image, video, or HTML5 ad files.")}
+               <div
                 onDragEnter={handleDragEnter}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
                 className={cn(
-                  "border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center transition-colors duration-200 ease-in-out",
-                  isDragging ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/70',
-                  files.length > 0 ? 'pb-3 pt-4' : 'py-10'
+                  "border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center transition-colors duration-300 ease-in-out",
+                  isDragging ? 'border-primary bg-primary/5' : 'border-input hover:border-primary/70 bg-background',
+                  files.length > 0 ? 'pb-4 pt-6' : 'py-12'
                 )}
               >
-                <Upload className={cn("h-12 w-12 mb-3", isDragging ? 'text-primary' : 'text-muted-foreground')} />
+                <Upload className={cn("h-12 w-12 mb-4", isDragging ? 'text-primary' : 'text-muted-foreground')} />
                 <div className="flex text-sm text-muted-foreground">
                   <Label
                     htmlFor="file-upload"
                     className="relative cursor-pointer rounded-md font-medium text-primary hover:text-primary/80 focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
                   >
-                    <span>Upload files</span>
-                    <input id="file-upload" name="file-upload" type="file" className="sr-only" multiple onChange={handleFileChange} />
+                    <span>Click to upload files</span>
                   </Label>
+                  <input id="file-upload" name="file-upload" type="file" className="sr-only" multiple onChange={handleFileChange} />
                   <p className="pl-1">or drag and drop</p>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  HTML, JS, Images, Video, Ad.txt files up to 10MB
+                <p className="text-xs text-muted-foreground mt-2">
+                  Supports: Images, Videos, HTML/JS. Max 10MB per file.
                 </p>
               </div>
               {files.length > 0 && (
-                <ul className="mt-4 w-full space-y-2 max-h-60 overflow-y-auto pr-2">
+                <div className="mt-6 space-y-3 max-h-72 overflow-y-auto pr-2 rounded-lg border border-border p-4 bg-secondary/30">
                   {files.map((file, index) => (
-                    <li key={index} className="flex items-center justify-between p-3 bg-secondary rounded-md border">
+                    <div key={index} className="flex items-center justify-between p-3 bg-card rounded-lg border border-border shadow-sm hover:shadow-md transition-shadow">
                       <div className="flex items-center space-x-3 overflow-hidden">
                         {getFileIcon(file)}
-                        <span className="text-sm text-foreground truncate" title={file.name}>{file.name}</span>
-                        <span className="text-xs text-muted-foreground shrink-0">({(file.size / 1024).toFixed(1)} KB)</span>
+                        <div className="flex flex-col">
+                           <span className="text-sm font-medium text-foreground truncate" title={file.name}>{file.name}</span>
+                           <span className="text-xs text-muted-foreground">({(file.size / 1024).toFixed(1)} KB)</span>
+                        </div>
                       </div>
-                      <Button type="button" variant="ghost" size="icon" onClick={() => removeFile(index)} className="h-7 w-7 text-muted-foreground hover:text-destructive">
+                      <Button type="button" variant="ghost" size="icon" onClick={() => removeFile(index)} className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full">
                         <X className="h-4 w-4" />
                         <span className="sr-only">Remove file</span>
                       </Button>
-                    </li>
+                    </div>
                   ))}
-                </ul>
+                </div>
               )}
-            </div>
+            </section>
+
+            <Separator className="my-8" />
             
-            <CardFooter className="pt-8 pb-0 px-0 flex flex-col sm:flex-row sm:justify-end space-y-2 sm:space-y-0 sm:space-x-2">
+            <Accordion type="multiple" className="w-full space-y-6">
+              {[
+                {id: "advanced-settings", title: "Advanced AdTech Settings", description: "Configure technical aspects like Ad.txt and header bidding.", icon: <ChevronDown className="h-5 w-5 shrink-0 transition-transform duration-200 text-primary" />},
+                {id: "campaign-settings", title: "Campaign Configuration", description: "Set up campaign duration, budget, and bidding strategies.", icon: <Calendar className="h-5 w-5 shrink-0 text-primary" />},
+                {id: "targeting-options", title: "Audience Targeting", description: "Define who will see your ad based on demographics and location.", icon: <Target className="h-5 w-5 shrink-0 text-primary" />}
+              ].map(item => (
+                <AccordionItem value={item.id} key={item.id} className="border border-border rounded-xl shadow-sm overflow-hidden bg-card">
+                  <AccordionTrigger className="px-6 py-4 text-lg font-medium hover:no-underline hover:bg-secondary/50 transition-colors data-[state=open]:bg-secondary/50 data-[state=open]:border-b data-[state=open]:border-border">
+                    <div className="flex items-center space-x-3">
+                       {React.cloneElement(item.icon, { className: cn(item.icon.props.className, "group-data-[state=open]:hidden") })}
+                       <ChevronUp className="h-5 w-5 shrink-0 transition-transform duration-200 text-primary group-data-[state=closed]:hidden" />
+                      <div>
+                        {item.title}
+                        <p className="text-sm font-normal text-muted-foreground mt-0.5">{item.description}</p>
+                      </div>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-6 py-6 space-y-6 bg-background/50 border-t border-border">
+                    {item.id === "advanced-settings" && (
+                      <>
+                        <FormFieldContainer>
+                          <Label htmlFor="ad-txt-content" className="text-sm font-medium flex items-center">Ad.txt Content {renderInfoTooltip("Ad.txt is a text file that publishers place on their websites to publicly declare the companies authorized to sell their digital inventory.")}</Label>
+                          <Textarea id="ad-txt-content" rows={3} placeholder="Enter ad.txt content for authorized digital sellers" value={adTxtContent} onChange={(e) => setAdTxtContent(e.target.value)} className="mt-1" />
+                        </FormFieldContainer>
+                        <FormFieldContainer>
+                          <Label htmlFor="header-code" className="text-sm font-medium flex items-center">Header Code {renderInfoTooltip("Custom header code can include tracking pixels, JavaScript tags, or other scripts that need to load before the ad.")}</Label>
+                          <Textarea id="header-code" rows={3} placeholder="Enter any custom header code or scripts" value={headerCode} onChange={(e) => setHeaderCode(e.target.value)} className="mt-1" />
+                        </FormFieldContainer>
+                        <div className="space-y-2 pt-2">
+                          <div className="flex items-center space-x-3">
+                            <Switch id="header-bidding" checked={headerBidding} onCheckedChange={setHeaderBidding} />
+                            <Label htmlFor="header-bidding" className="font-medium">Enable Header Bidding</Label>
+                          </div>
+                          <p className="text-xs text-muted-foreground pl-12">Allow multiple Supply-Side Platforms (SSPs) to bid on your inventory simultaneously.</p>
+                        </div>
+                        {headerBidding && (
+                          <FormFieldContainer className="pl-12">
+                            <Label htmlFor="header-bidding-partners" className="text-sm font-medium">Header Bidding Partners</Label>
+                            <Textarea id="header-bidding-partners" rows={2} placeholder="List your header bidding partners (e.g., Rubicon, AppNexus, PubMatic)" value={headerBiddingPartners} onChange={(e) => setHeaderBiddingPartners(e.target.value)} className="mt-1" />
+                          </FormFieldContainer>
+                        )}
+                        <div className="space-y-2 pt-2">
+                          <div className="flex items-center space-x-3">
+                            <Switch id="fallback-image" checked={fallbackImage} onCheckedChange={setFallbackImage} />
+                            <Label htmlFor="fallback-image" className="font-medium">Provide Fallback Image</Label>
+                          </div>
+                          <p className="text-xs text-muted-foreground pl-12">Include a backup image if the main ad fails to load. Relevant for HTML5 ads.</p>
+                        </div>
+                      </>
+                    )}
+                    {item.id === "campaign-settings" && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
+                        <FormFieldContainer>
+                            <Label htmlFor="start-date" className="text-sm font-medium">Start Date</Label>
+                            <div className="relative mt-1">
+                                <Input id="start-date" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="pr-10" />
+                                <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                            </div>
+                        </FormFieldContainer>
+                         <FormFieldContainer>
+                            <Label htmlFor="end-date" className="text-sm font-medium">End Date</Label>
+                             <div className="relative mt-1">
+                                <Input id="end-date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="pr-10" />
+                                <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                            </div>
+                        </FormFieldContainer>
+                        <FormFieldContainer>
+                            <Label htmlFor="budget" className="text-sm font-medium">Budget ($)</Label>
+                            <div className="relative mt-1">
+                                <Input id="budget" type="number" min="0" step="0.01" placeholder="e.g., 500.00" value={budget} onChange={(e) => setBudget(e.target.value)} className="pl-7" />
+                                <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                            </div>
+                        </FormFieldContainer>
+                        <FormFieldContainer>
+                          <Label htmlFor="bid-strategy" className="text-sm font-medium flex items-center">Bid Strategy {renderInfoTooltip("The bid strategy determines how you pay for your ad: CPC (cost per click), CPM (cost per thousand impressions), CPA (cost per action), or CPV (cost per view).")}</Label>
+                          <Select value={bidStrategy} onValueChange={setBidStrategy}>
+                            <SelectTrigger id="bid-strategy" className="mt-1">
+                              <SelectValue placeholder="Select bid strategy" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {bidStrategyOptions.map(option => (
+                                <SelectItem key={option.value} value={option.value || 'none'}>{option.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormFieldContainer>
+                      </div>
+                    )}
+                    {item.id === "targeting-options" && (
+                      <>
+                        <FormFieldContainer>
+                          <Label htmlFor="target-audience" className="text-sm font-medium flex items-center">Target Audience <Target className="h-4 w-4 text-muted-foreground ml-1.5" /></Label>
+                          <Textarea id="target-audience" rows={2} placeholder="Describe your target audience (e.g., age, interests, demographics)" value={targetAudience} onChange={(e) => setTargetAudience(e.target.value)} className="mt-1" />
+                        </FormFieldContainer>
+                        <FormFieldContainer>
+                          <Label htmlFor="target-locations" className="text-sm font-medium flex items-center">Target Locations {renderInfoTooltip("Specify the geographic locations where you want your ad to be shown. You can target by country, region, city, or even postal code.")}</Label>
+                          <Textarea id="target-locations" rows={2} placeholder="List target geographic locations (e.g., countries, regions, cities)" value={targetLocations} onChange={(e) => setTargetLocations(e.target.value)} className="mt-1" />
+                        </FormFieldContainer>
+                        <FormFieldContainer>
+                          <Label htmlFor="target-devices" className="text-sm font-medium">Target Devices</Label>
+                          <Select value={targetDevices} onValueChange={setTargetDevices}>
+                            <SelectTrigger id="target-devices" className="mt-1">
+                              <SelectValue placeholder="Select target devices" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {deviceOptions.map(option => (
+                                <SelectItem key={option.value} value={option.value || 'none'}>{option.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormFieldContainer>
+                      </>
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+            
+            <CardFooter className="pt-10 pb-0 px-0 flex flex-col sm:flex-row sm:justify-end space-y-3 sm:space-y-0 sm:space-x-3 border-t border-border mt-12">
               <Button
                 type="button"
                 variant="outline"
@@ -465,7 +478,7 @@ const UploadAdForm: React.FC<UploadAdFormProps> = ({ onSubmit }) => {
                 className="w-full sm:w-auto"
                 size="lg"
               >
-                <Eye className="mr-2 h-4 w-4" />
+                <Eye className="mr-2 h-5 w-5" />
                 Preview Ad
               </Button>
               <Button
@@ -475,11 +488,11 @@ const UploadAdForm: React.FC<UploadAdFormProps> = ({ onSubmit }) => {
                 size="lg"
               >
                 {isLoading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 ) : (
-                  <Plus className="mr-2 h-4 w-4" />
+                  <Upload className="mr-2 h-5 w-5" /> // Changed from Plus to Upload for better context
                 )}
-                {isLoading ? 'Uploading...' : 'Upload Ad'}
+                {isLoading ? 'Submitting...' : 'Submit Ad Creative'}
               </Button>
             </CardFooter>
           </form>

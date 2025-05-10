@@ -33,13 +33,13 @@ export default function UploadAdPage() {
   };
 
   return (
-    <main className="min-h-screen bg-background py-8 px-4 sm:px-6 lg:px-8 flex flex-col items-center">
-      <div className="w-full max-w-4xl">
-        <header className="mb-10 text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+    <main className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8 flex flex-col items-center">
+      <div className="w-full max-w-5xl"> {/* Increased max-width */}
+        <header className="mb-12 text-center"> {/* Increased margin-bottom */}
+          <h1 className="text-4xl font-bold tracking-tight text-primary sm:text-5xl">
             AdUploader Pro
           </h1>
-          <p className="mt-3 text-lg text-muted-foreground sm:mt-4">
+          <p className="mt-4 text-lg text-muted-foreground sm:mt-5">
             Streamline your ad creative uploads with our intuitive platform.
           </p>
         </header>
