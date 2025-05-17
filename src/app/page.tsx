@@ -49,12 +49,7 @@ export default function UploadAdPage() {
                 Streamline your ad creative uploads with our intuitive platform.
               </p>
             </div>
-            <Link href="/my-ads" passHref>
-              <Button variant="outline" size="lg">
-                <List className="mr-2 h-5 w-5" />
-                View My Ads
-              </Button>
-            </Link>
+            {/* "View My Ads" button removed from here */}
           </div>
         </header>
         <UploadAdForm onSubmit={handleSubmitAd} />
