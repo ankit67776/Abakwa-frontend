@@ -2,7 +2,7 @@
 import type { NextPage } from 'next';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, LayoutGrid, ListFilter } from 'lucide-react';
+import { PlusCdircle, LayoutGrid, ListFilter } from 'lucide-react';
 import MyAdCard, { type Ad } from './components/my-ad-card';
 import {
   DropdownMenu,
