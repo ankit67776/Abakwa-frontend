@@ -40,7 +40,11 @@ const SignupForm: React.FC = () => {
       const authResult = await authSignup(email, password, name, role);
        if (authResult && authResult.user) {
         checkAuthStatus(); // Ensure auth state is updated
-        router.push(role === 'advertiser' ? '/advertiser/dashboard' : '/publisher/dashboard');
+        if (role === 'publisher') {
+            router.push('/publisher-registration'); // Redirect to publisher registration
+        } else {
+            router.push('/advertiser/dashboard'); 
+        }
       } else {
         setError('Signup failed. Please try again.');
       }
@@ -57,9 +61,13 @@ const SignupForm: React.FC = () => {
     try {
       const authResult = await authHandleGoogleLogin(credentialResponse, role); // Pass role for Google signup
       if (authResult && authResult.user) {
-        const userRole = authResult.user?.role || 'advertiser';
+        const userRole = authResult.user?.role || 'advertiser'; // Use role from authResult
         checkAuthStatus();
-        router.push(userRole === 'advertiser' ? '/advertiser/dashboard' : '/publisher/dashboard');
+        if (userRole === 'publisher') {
+            router.push('/publisher-registration'); // Redirect to publisher registration
+        } else {
+            router.push('/advertiser/dashboard');
+        }
       } else {
         setError('Google Signup failed. Please try again.');
       }
