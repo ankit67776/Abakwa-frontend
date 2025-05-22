@@ -32,7 +32,7 @@ const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   // const { user, isAuthenticated, logout, isLoading } = useAuth(); // Auth temporarily bypassed
   // Mock user for now as auth is bypassed. Replace with actual user from useAuth when re-enabled.
-  const user = { name: "Demo User", email: "demo@example.com", role: "advertiser", avatarUrl: undefined }; // Added avatarUrl for potential future use
+  const user = { name: "Demo Publisher", email: "publisher@example.com", role: "publisher", avatarUrl: undefined }; // Changed role to publisher
   const isAuthenticated = true; // Mock auth
   const isLoading = false; // Mock auth loading
   
