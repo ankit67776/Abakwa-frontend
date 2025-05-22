@@ -92,11 +92,11 @@ const Header: React.FC = () => {
         <div className="flex justify-between items-center py-4 md:space-x-10">
           <div className="flex justify-start lg:w-0 lg:flex-1">
             <Link href="/" className="flex items-center">
-              <span className="sr-only">AdUploader Pro</span>
+              <span className="sr-only">Abakwa</span>
               <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
                 <span className="text-primary-foreground font-bold">A</span>
               </div>
-              <span className={`ml-2 text-xl font-bold ${isTransparentHeader ? 'text-white' : 'text-gray-900'}`}>AdUploader Pro</span>
+              <span className={`ml-2 text-xl font-bold ${isTransparentHeader ? 'text-white' : 'text-gray-900'}`}>Abakwa</span>
             </Link>
           </div>
 
@@ -192,7 +192,7 @@ const Header: React.FC = () => {
                   <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
                     <span className="text-primary-foreground font-bold">A</span>
                   </div>
-                   <span className="ml-2 text-xl font-bold text-gray-900">AdUploader Pro</span>
+                   <span className="ml-2 text-xl font-bold text-gray-900">Abakwa</span>
                 </Link>
               </div>
               <div className="-mr-2">

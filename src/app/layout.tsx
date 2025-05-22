@@ -18,8 +18,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'AdUploader Pro', // Will be Abakwa from user's code
-  description: 'Streamline your ad creative uploads with our intuitive platform.',
+  title: 'Abakwa', 
+  description: 'Streamline your ad creative uploads and ad exchange with Abakwa.',
 };
 
 // IMPORTANT: Replace with your actual Google Client ID
