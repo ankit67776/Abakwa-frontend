@@ -6,12 +6,33 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Menu, X, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar";
 // import { useAuth } from '@/hooks/useAuth'; // Auth temporarily bypassed
+
+const getInitials = (name: string) => {
+  if (!name) return "?";
+  const names = name.split(' ');
+  if (names.length === 1) return names[0].charAt(0).toUpperCase();
+  return `${names[0].charAt(0)}${names[names.length - 1].charAt(0)}`.toUpperCase();
+};
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   // const { user, isAuthenticated, logout, isLoading } = useAuth(); // Auth temporarily bypassed
-  const user = { name: "Demo User", role: "advertiser", id: "temp-user", email: "demo@example.com" }; // Mock user
+  // Mock user for now as auth is bypassed. Replace with actual user from useAuth when re-enabled.
+  const user = { name: "Demo User", email: "demo@example.com", role: "advertiser", avatarUrl: undefined }; // Added avatarUrl for potential future use
   const isAuthenticated = true; // Mock auth
   const isLoading = false; // Mock auth loading
   
@@ -111,33 +132,37 @@ const Header: React.FC = () => {
           </nav>
 
           <div className="hidden md:flex items-center justify-end md:flex-1 lg:w-0">
-            {isAuthenticated ? (
-              <div className="ml-3 relative group">
-                <div>
-                  <button
-                    type="button"
-                    className={`max-w-xs flex items-center text-sm rounded-full focus:outline-none ${isTransparentHeader ? 'text-white' : 'text-gray-700'}`}
-                    id="user-menu-button"
-                    aria-expanded="false"
-                    aria-haspopup="true"
-                  > 
-                    <span className="sr-only">Open user menu</span>
-                    <span className="mr-1">{user?.email || "User"}</span>
-                    <ChevronDown className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="hidden group-hover:block absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
-                  <Link href={user?.role === 'advertiser' ? '/advertiser/dashboard' : '/publisher/dashboard'} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+            {isAuthenticated && user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className={`relative h-10 w-10 rounded-full p-0 focus:ring-2 ${isTransparentHeader ? 'focus:ring-white/50' : 'focus:ring-ring'}`}>
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={user.avatarUrl} alt={user.name} />
+                      <AvatarFallback className={`${isTransparentHeader && !isScrolled ? 'bg-white/20 text-white border border-white/50' : 'bg-muted'}`}>
+                        {getInitials(user.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">{user.name}</p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {user.email}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={() => router.push(user?.role === 'advertiser' ? '/advertiser/dashboard' : '/publisher/dashboard')}>
                     Dashboard
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={handleLogout}>
                     Sign out
-                  </button>
-                </div>
-              </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
               <>
                 <Link href="/login" className={`whitespace-nowrap text-base font-medium ${isTransparentHeader ? 'text-white hover:text-white/80' : 'text-gray-500 hover:text-gray-900'}`}>
@@ -157,6 +182,7 @@ const Header: React.FC = () => {
         </div>
       </div>
 
+      {/* Mobile menu */}
       {isMenuOpen && (
         <div className="absolute top-0 inset-x-0 p-2 transition transform origin-top-right md:hidden">
           <div className="rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 overflow-hidden">
@@ -200,12 +226,18 @@ const Header: React.FC = () => {
                 All Ads
             </Link>
             </div>
-            {isAuthenticated ? (
+            {isAuthenticated && user ? (
               <div className="px-5 py-4 border-t border-gray-200">
                 <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <Avatar className="h-10 w-10">
+                       <AvatarImage src={user.avatarUrl} alt={user.name} />
+                       <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                    </Avatar>
+                  </div>
                   <div className="ml-3">
-                    <div className="text-base font-medium text-gray-800">{user?.name || "User"}</div>
-                    <div className="text-sm font-medium text-gray-500">{user?.email || "user@example.com"}</div>
+                    <div className="text-base font-medium text-gray-800">{user.name}</div>
+                    <div className="text-sm font-medium text-gray-500">{user.email}</div>
                   </div>
                 </div>
                 <div className="mt-3 space-y-1">
@@ -235,5 +267,3 @@ const Header: React.FC = () => {
 };
 
 export default Header;
-
-    
