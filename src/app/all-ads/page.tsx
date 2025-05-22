@@ -13,6 +13,9 @@ import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 
+const ALL_STATUSES_VALUE = "_all_statuses_";
+const ALL_FORMATS_VALUE = "_all_formats_";
+
 const AllAdsPage: React.FC = () => {
   const [allAds, setAllAds] = useState<Ad[]>([]);
   const [filteredAds, setFilteredAds] = useState<Ad[]>([]);
@@ -23,9 +26,7 @@ const AllAdsPage: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [selectedFormat, setSelectedFormat] = useState<string>('');
 
-  const adStatuses: Ad['status'][] = ['Active', 'Paused', 'Draft', 'Under Review', 'Ended', 'Scheduled', 'active', 'in_review', 'selected', 'unknown'];
-  const adFormats: Ad['format'][] = ['image', 'video', 'html5', 'text', 'unknown'];
-
+  // Ad statuses and formats are derived from the ads data below
 
   useEffect(() => {
     const fetchAds = async () => {
@@ -93,6 +94,8 @@ const AllAdsPage: React.FC = () => {
     }
   };
 
+  const uniqueStatuses = Array.from(new Set(allAds.map(ad => ad.status?.toLowerCase()))).filter(Boolean);
+  const uniqueFormats = Array.from(new Set(allAds.map(ad => ad.format?.toLowerCase()))).filter(Boolean);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -121,13 +124,16 @@ const AllAdsPage: React.FC = () => {
             </div>
             <div>
               <label htmlFor="status-filter" className="block text-sm font-medium text-muted-foreground mb-1">Status</label>
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <Select 
+                value={selectedStatus || ALL_STATUSES_VALUE} 
+                onValueChange={(value) => setSelectedStatus(value === ALL_STATUSES_VALUE ? '' : value)}
+              >
                 <SelectTrigger id="status-filter">
                   <SelectValue placeholder="All Statuses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Statuses</SelectItem>
-                  {Array.from(new Set(allAds.map(ad => ad.status?.toLowerCase()))).filter(Boolean).map((status) => (
+                  <SelectItem value={ALL_STATUSES_VALUE}>All Statuses</SelectItem>
+                  {uniqueStatuses.map((status) => (
                     <SelectItem key={status} value={status!}>
                       {status?.charAt(0).toUpperCase() + status!.slice(1).replace('_', ' ')}
                     </SelectItem>
@@ -137,13 +143,16 @@ const AllAdsPage: React.FC = () => {
             </div>
             <div>
               <label htmlFor="format-filter" className="block text-sm font-medium text-muted-foreground mb-1">Format</label>
-              <Select value={selectedFormat} onValueChange={setSelectedFormat}>
+              <Select 
+                value={selectedFormat || ALL_FORMATS_VALUE} 
+                onValueChange={(value) => setSelectedFormat(value === ALL_FORMATS_VALUE ? '' : value)}
+              >
                 <SelectTrigger id="format-filter">
                   <SelectValue placeholder="All Formats" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Formats</SelectItem>
-                   {Array.from(new Set(allAds.map(ad => ad.format?.toLowerCase()))).filter(Boolean).map((format) => (
+                  <SelectItem value={ALL_FORMATS_VALUE}>All Formats</SelectItem>
+                   {uniqueFormats.map((format) => (
                     <SelectItem key={format} value={format!}>
                       {format?.charAt(0).toUpperCase() + format!.slice(1)}
                     </SelectItem>
