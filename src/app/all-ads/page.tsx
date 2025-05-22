@@ -2,19 +2,30 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { adsService } from '../../services/adsService'; 
-import type { Ad } from '@/types/ad'; 
+import { adsService } from '../../services/adsService';
+import type { Ad } from '@/types/ad';
 import Header from '@/components/layout/Header';
-import { AlertCircle, Loader2, PackageSearch } from 'lucide-react'; // Added PackageSearch
+import { AlertCircle, Loader2, PackageSearch, Filter as FilterIcon } from 'lucide-react'; // Added FilterIcon
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 
 const AllAdsPage: React.FC = () => {
-  const [ads, setAds] = useState<Ad[]>([]);
+  const [allAds, setAllAds] = useState<Ad[]>([]);
+  const [filteredAds, setFilteredAds] = useState<Ad[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState<string>('');
+  const [selectedFormat, setSelectedFormat] = useState<string>('');
+
+  const adStatuses: Ad['status'][] = ['Active', 'Paused', 'Draft', 'Under Review', 'Ended', 'Scheduled', 'active', 'in_review', 'selected', 'unknown'];
+  const adFormats: Ad['format'][] = ['image', 'video', 'html5', 'text', 'unknown'];
+
 
   useEffect(() => {
     const fetchAds = async () => {
@@ -22,7 +33,8 @@ const AllAdsPage: React.FC = () => {
       setError(null);
       try {
         const data = await adsService.getAllAds();
-        setAds(data);
+        setAllAds(data);
+        setFilteredAds(data); // Initially, show all ads
       } catch (err) {
         setError('Failed to load ads. Please try again later.');
         console.error("Error fetching all ads:", err);
@@ -34,11 +46,32 @@ const AllAdsPage: React.FC = () => {
     fetchAds();
   }, []);
 
+  useEffect(() => {
+    let tempAds = allAds;
+
+    if (searchTerm) {
+      tempAds = tempAds.filter(ad =>
+        ad.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (ad.description && ad.description.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+
+    if (selectedStatus) {
+      tempAds = tempAds.filter(ad => ad.status?.toLowerCase() === selectedStatus.toLowerCase());
+    }
+
+    if (selectedFormat) {
+      tempAds = tempAds.filter(ad => ad.format?.toLowerCase() === selectedFormat.toLowerCase());
+    }
+
+    setFilteredAds(tempAds);
+  }, [searchTerm, selectedStatus, selectedFormat, allAds]);
+
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
-    const options: Intl.DateTimeFormatOptions = { 
-      year: 'numeric', 
-      month: 'short', 
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'short',
       day: 'numeric',
     };
     try {
@@ -49,8 +82,6 @@ const AllAdsPage: React.FC = () => {
   };
 
   const getStatusColorClass = (status?: Ad['status']): string => {
-    // Use a consistent set of Tailwind classes based on the theme if possible, or define specific ones
-    // For now, keeping the direct color classes to match original intent
     switch (status?.toLowerCase()) {
         case 'active': return 'bg-green-100 text-green-800 border-green-300 dark:bg-green-800/30 dark:text-green-300 dark:border-green-700';
         case 'paused': return 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-800/30 dark:text-yellow-300 dark:border-yellow-700';
@@ -74,6 +105,56 @@ const AllAdsPage: React.FC = () => {
           </p>
         </div>
 
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="text-xl flex items-center"><FilterIcon className="mr-2 h-5 w-5 text-primary" /> Filter Ads</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label htmlFor="search-term" className="block text-sm font-medium text-muted-foreground mb-1">Search</label>
+              <Input
+                id="search-term"
+                placeholder="Search by name or description..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="status-filter" className="block text-sm font-medium text-muted-foreground mb-1">Status</label>
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger id="status-filter">
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Statuses</SelectItem>
+                  {Array.from(new Set(allAds.map(ad => ad.status?.toLowerCase()))).filter(Boolean).map((status) => (
+                    <SelectItem key={status} value={status!}>
+                      {status?.charAt(0).toUpperCase() + status!.slice(1).replace('_', ' ')}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label htmlFor="format-filter" className="block text-sm font-medium text-muted-foreground mb-1">Format</label>
+              <Select value={selectedFormat} onValueChange={setSelectedFormat}>
+                <SelectTrigger id="format-filter">
+                  <SelectValue placeholder="All Formats" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Formats</SelectItem>
+                   {Array.from(new Set(allAds.map(ad => ad.format?.toLowerCase()))).filter(Boolean).map((format) => (
+                    <SelectItem key={format} value={format!}>
+                      {format?.charAt(0).toUpperCase() + format!.slice(1)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+
         {loading ? (
           <div className="mt-12 flex flex-col items-center justify-center text-muted-foreground">
             <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
@@ -85,20 +166,20 @@ const AllAdsPage: React.FC = () => {
             <h3 className="text-xl font-semibold text-destructive">Error Loading Ads</h3>
             <p className="mt-2 text-sm text-destructive/80">{error}</p>
           </div>
-        ) : ads.length === 0 ? (
+        ) : filteredAds.length === 0 ? (
             <div className="mt-12 text-center text-muted-foreground">
                 <PackageSearch className="mx-auto h-16 w-16 mb-4" />
                 <h3 className="text-xl font-semibold">No Ads Found</h3>
-                <p className="mt-1">There are currently no ads to display.</p>
+                <p className="mt-1">There are currently no ads matching your criteria.</p>
             </div>
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {ads.map((ad) => (
+            {filteredAds.map((ad) => (
               <Card key={ad.id} className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-xl">
                 <CardHeader className="p-0">
                   <div className="aspect-[16/9] bg-muted relative">
                     <Image
-                      src={ad.imageUrl || ad.thumbnailUrl || 'https://placehold.co/600x338.png'} // Removed text query
+                      src={ad.imageUrl || ad.thumbnailUrl || 'https://placehold.co/600x338.png'}
                       alt={ad.name}
                       fill
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
@@ -106,8 +187,8 @@ const AllAdsPage: React.FC = () => {
                       data-ai-hint={ad.aiHint || "advertisement"}
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        target.onerror = null; 
-                        target.src = 'https://placehold.co/600x338.png'; // Removed text query
+                        target.onerror = null;
+                        target.src = 'https://placehold.co/600x338.png';
                       }}
                     />
                   </div>
@@ -123,7 +204,7 @@ const AllAdsPage: React.FC = () => {
                   <CardDescription className="text-xs text-muted-foreground line-clamp-2 mb-3 flex-grow" title={ad.description}>
                     {ad.description || "No description available."}
                   </CardDescription>
-                  
+
                   <div className="text-xs text-muted-foreground space-y-1 mt-auto">
                     <p>By: <span className="font-medium text-foreground">{ad.advertiser?.name || 'Unknown Advertiser'}</span></p>
                     <p>Size: <span className="font-medium text-foreground">{ad.size || 'N/A'}</span></p>
@@ -159,5 +240,3 @@ const AllAdsPage: React.FC = () => {
 };
 
 export default AllAdsPage;
-
-    
