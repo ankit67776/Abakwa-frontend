@@ -1,231 +1,158 @@
+"use client";
 
-"use client"; // Making it a client component for potential future client-side interactions (e.g. modals)
-
-import React from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
+import React, { useEffect, useState } from 'react';
+import { adsService } from '../../services/adsService'; // Adjusted path
+import type { Ad } from '@/types/ad'; // Using centralized Ad type
+import Header from '@/components/layout/Header';
+import { AlertCircle, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { ImageIcon as AdImageIcon, Film, FileText as AdFileTextIcon, MessageSquare, Edit3, Eye, Trash2, BarChart2, MoreVertical, CalendarDays, Tag, TrendingUp, AlertCircle } from 'lucide-react';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
-export interface Ad {
-  id: string;
-  name: string;
-  format: 'image' | 'video' | 'html5' | 'text';
-  status: 'Active' | 'Paused' | 'Draft' | 'Under Review' | 'Ended' | 'Scheduled';
-  imageUrl?: string;
-  aiHint?: string;
-  html5File?: string;
-  textAdContent?: { headline: string; description: string };
-  size?: string;
-  startDate?: string; // Consider using Date objects for proper formatting/logic
-  endDate?: string;
-  impressions?: number;
-  clicks?: number;
-  ctr?: string;
-}
+const AllAdsPage: React.FC = () => {
+  const [ads, setAds] = useState<Ad[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-interface MyAdCardProps {
-  ad: Ad;
-}
+  useEffect(() => {
+    const fetchAds = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await adsService.getAllAds();
+        setAds(data);
+      } catch (err) {
+        setError('Failed to load ads. Please try again later.');
+        console.error("Error fetching all ads:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-const getStatusVariant = (status: Ad['status']): React.ComponentProps<typeof Badge>['variant'] => {
-  switch (status) {
-    case 'Active':
-      return 'default'; // Uses primary color (blue)
-    case 'Scheduled':
-      return 'secondary'; // Uses a muted purple/blue if you customize it or gray
-    case 'Paused':
-      return 'outline'; // Yellowish if you map it, or gray
-    case 'Ended':
-      return 'destructive';
-    case 'Under Review':
-    case 'Draft':
-    default:
-      return 'secondary';
-  }
-};
+    fetchAds();
+  }, []);
 
-const getStatusColorClass = (status: Ad['status']): string => {
-  switch (status) {
-    case 'Active':
-      return 'bg-green-500 text-white';
-    case 'Scheduled':
-      return 'bg-purple-500 text-white';
-    case 'Paused':
-      return 'bg-yellow-500 text-black';
-    case 'Under Review':
-      return 'bg-blue-500 text-white';
-    case 'Ended':
-      return 'bg-red-600 text-white'; // Using destructive-foreground
-    case 'Draft':
-      return 'bg-gray-400 text-black';
-    default:
-      return 'bg-muted text-muted-foreground';
-  }
-}
-
-
-const MyAdCard: React.FC<MyAdCardProps> = ({ ad }) => {
-  const renderPreview = () => {
-    const commonClasses = "w-full h-40 object-cover rounded-t-md bg-muted flex items-center justify-center";
-    const iconClasses = "h-16 w-16 text-muted-foreground";
-
-    switch (ad.format) {
-      case 'image':
-        return ad.imageUrl ? (
-          <Image
-            src={ad.imageUrl}
-            alt={ad.name}
-            width={300}
-            height={160}
-            className={commonClasses}
-            data-ai-hint={ad.aiHint || "advertisement"}
-          />
-        ) : (
-          <div className={cn(commonClasses, "bg-secondary/30")}>
-            <AdImageIcon className={iconClasses} />
-          </div>
-        );
-      case 'video':
-        return (
-          <div className={cn(commonClasses, "bg-secondary/30")}>
-            {ad.imageUrl ? 
-              <Image src={ad.imageUrl} alt={`${ad.name} (video thumbnail)`} width={300} height={160} className={commonClasses} data-ai-hint={ad.aiHint || "video ad"} />
-              : <Film className={iconClasses} />
-            }
-          </div>
-        );
-      case 'html5':
-        return (
-          <div className={cn(commonClasses, "bg-secondary/30")}>
-            <AdFileTextIcon className={iconClasses} />
-          </div>
-        );
-      case 'text':
-        return (
-          <div className={cn(commonClasses, "p-4 overflow-hidden bg-secondary/30 flex flex-col justify-center")}>
-            <MessageSquare className={cn(iconClasses, "mb-2 self-center")} />
-            <h4 className="text-sm font-semibold text-foreground truncate">{ad.textAdContent?.headline}</h4>
-            <p className="text-xs text-muted-foreground truncate">{ad.textAdContent?.description}</p>
-          </div>
-        );
-      default:
-        return (
-          <div className={cn(commonClasses, "bg-secondary/30")}>
-             <AlertCircle className={iconClasses} />
-          </div>
-        );
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'N/A';
+    const options: Intl.DateTimeFormatOptions = { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric',
+    };
+    try {
+      return new Date(dateString).toLocaleDateString(undefined, options);
+    } catch {
+      return "Invalid Date";
     }
   };
 
-  const handlePreviewClick = () => {
-    // In a real app, this would open the AdPreview modal
-    // For now, we can just log or alert
-    console.log("Previewing ad:", ad.name);
-    alert(`Previewing: ${ad.name}\n(AdPreview component integration needed for full preview)`);
+  const getStatusColorClass = (status?: Ad['status']): string => {
+    switch (status?.toLowerCase()) {
+        case 'active': return 'bg-green-100 text-green-800 border-green-300';
+        case 'paused': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+        case 'ended': return 'bg-gray-100 text-gray-800 border-gray-300';
+        case 'scheduled': return 'bg-blue-100 text-blue-800 border-blue-300';
+        case 'under review': case 'in_review': return 'bg-purple-100 text-purple-800 border-purple-300';
+        case 'draft': case 'selected': return 'bg-indigo-100 text-indigo-800 border-indigo-300';
+        default: return 'bg-muted text-muted-foreground border-border';
+    }
   };
 
 
   return (
-    <Card className="flex flex-col h-full shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-xl overflow-hidden">
-      <CardHeader className="p-0 relative">
-        {renderPreview()}
-        <div className="absolute top-2 right-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 bg-background/70 hover:bg-background rounded-full">
-                <MoreVertical className="h-4 w-4 text-foreground" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => alert(`Editing ${ad.name}`)}>
-                <Edit3 className="mr-2 h-4 w-4" /> Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handlePreviewClick}>
-                <Eye className="mr-2 h-4 w-4" /> Preview
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <BarChart2 className="mr-2 h-4 w-4" /> Analytics
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive focus:text-destructive-foreground focus:bg-destructive" onClick={() => alert(`Deleting ${ad.name}`)}>
-                <Trash2 className="mr-2 h-4 w-4" /> Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </CardHeader>
-      <CardContent className="p-4 flex-grow">
-        <CardTitle className="text-lg font-semibold mb-1 truncate" title={ad.name}>
-          {ad.name}
-        </CardTitle>
-        <div className="flex items-center space-x-2 mb-3">
-          <Badge variant="outline" className="capitalize text-xs">
-             {ad.format === 'image' && <AdImageIcon className="mr-1 h-3 w-3" />}
-             {ad.format === 'video' && <Film className="mr-1 h-3 w-3" />}
-             {ad.format === 'html5' && <AdFileTextIcon className="mr-1 h-3 w-3" />}
-             {ad.format === 'text' && <MessageSquare className="mr-1 h-3 w-3" />}
-            {ad.format}
-          </Badge>
-          <Badge className={cn("text-xs", getStatusColorClass(ad.status))}>
-            {ad.status}
-          </Badge>
-        </div>
-        
-        <div className="space-y-2 text-sm text-muted-foreground">
-          {ad.size && (
-            <div className="flex items-center">
-              <Tag className="mr-2 h-4 w-4 text-primary/70" />
-              <span>Size: {ad.size}</span>
-            </div>
-          )}
-          {(ad.startDate || ad.endDate) && (
-            <div className="flex items-center">
-              <CalendarDays className="mr-2 h-4 w-4 text-primary/70" />
-              <span>
-                {ad.startDate ? new Date(ad.startDate).toLocaleDateString() : 'N/A'} - {ad.endDate ? new Date(ad.endDate).toLocaleDateString() : 'Ongoing'}
-              </span>
-            </div>
-          )}
+    <div className="min-h-screen bg-background text-foreground">
+      <Header />
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 pt-20"> {/* Added pt-20 for header */}
+        <div className="px-4 sm:px-0 mb-8">
+          <h1 className="text-3xl font-bold tracking-tight text-primary sm:text-4xl">All Advertiser Ads</h1>
+          <p className="mt-2 text-lg text-muted-foreground">
+            Browse active advertising campaigns from all advertisers on the platform.
+          </p>
         </div>
 
-        {(ad.impressions !== undefined || ad.clicks !== undefined || ad.ctr) && (
-          <>
-            <hr className="my-3 border-border" />
-            <div className="grid grid-cols-3 gap-2 text-center text-xs">
-              <div>
-                <p className="font-semibold text-foreground">{ad.impressions?.toLocaleString() ?? 'N/A'}</p>
-                <p className="text-muted-foreground">Impressions</p>
-              </div>
-              <div>
-                <p className="font-semibold text-foreground">{ad.clicks?.toLocaleString() ?? 'N/A'}</p>
-                <p className="text-muted-foreground">Clicks</p>
-              </div>
-              <div>
-                <p className="font-semibold text-foreground">{ad.ctr ?? 'N/A'}</p>
-                <p className="text-muted-foreground">CTR</p>
-              </div>
+        {loading ? (
+          <div className="mt-12 flex flex-col items-center justify-center text-muted-foreground">
+            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+            <p className="text-lg">Loading ads...</p>
+          </div>
+        ) : error ? (
+          <div className="mt-12 bg-destructive/10 border border-destructive/30 rounded-md p-6 text-center">
+            <AlertCircle className="mx-auto h-12 w-12 text-destructive mb-3" />
+            <h3 className="text-xl font-semibold text-destructive">Error Loading Ads</h3>
+            <p className="mt-2 text-sm text-destructive/80">{error}</p>
+          </div>
+        ) : ads.length === 0 ? (
+            <div className="mt-12 text-center text-muted-foreground">
+                <PackageSearch className="mx-auto h-16 w-16 mb-4" />
+                <h3 className="text-xl font-semibold">No Ads Found</h3>
+                <p className="mt-1">There are currently no ads to display.</p>
             </div>
-          </>
+        ) : (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {ads.map((ad) => (
+              <Card key={ad.id} className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-xl">
+                <CardHeader className="p-0">
+                  <div className="aspect-[16/9] bg-muted relative">
+                    <Image
+                      src={ad.imageUrl || ad.thumbnailUrl || 'https://placehold.co/600x338.png?text=Ad'}
+                      alt={ad.name}
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
+                      className="object-cover"
+                      data-ai-hint={ad.aiHint || "advertisement"}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.onerror = null; // prevent infinite loop if placeholder also fails
+                        target.src = 'https://placehold.co/600x338.png?text=Error';
+                      }}
+                    />
+                  </div>
+                </CardHeader>
+                <CardContent className="p-4 flex-grow flex flex-col">
+                  <CardTitle className="text-lg font-semibold mb-1 truncate" title={ad.name}>{ad.name}</CardTitle>
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Badge className={cn("text-xs capitalize border", getStatusColorClass(ad.status))}>
+                      {ad.status?.replace('_', ' ') || 'Unknown'}
+                    </Badge>
+                    {ad.format && <Badge variant="outline" className="capitalize text-xs">{ad.format}</Badge>}
+                  </div>
+                  <CardDescription className="text-xs text-muted-foreground line-clamp-2 mb-3 flex-grow" title={ad.description}>
+                    {ad.description || "No description available."}
+                  </CardDescription>
+                  
+                  <div className="text-xs text-muted-foreground space-y-1 mt-auto">
+                    <p>By: <span className="font-medium text-foreground">{ad.advertiser?.name || 'Unknown Advertiser'}</span></p>
+                    <p>Size: <span className="font-medium text-foreground">{ad.size || 'N/A'}</span></p>
+                    <p>Created: <span className="font-medium text-foreground">{formatDate(ad.createdAt)}</span></p>
+                    {ad.startDate && <p>Runs: {formatDate(ad.startDate)} - {ad.endDate ? formatDate(ad.endDate) : 'Ongoing'}</p>}
+                  </div>
+                </CardContent>
+                <CardFooter className="p-3 border-t bg-secondary/30">
+                  <div className="grid grid-cols-3 gap-2 text-center text-xs w-full">
+                    <div>
+                      <p className="font-semibold text-foreground">{ad.impressions?.toLocaleString() ?? 'N/A'}</p>
+                      <p className="text-muted-foreground">Impressions</p>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-foreground">{ad.clicks?.toLocaleString() ?? 'N/A'}</p>
+                      <p className="text-muted-foreground">Clicks</p>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-foreground">
+                        {typeof ad.ctr === 'number' ? `${ad.ctr.toFixed(2)}%` : (ad.ctr || 'N/A')}
+                      </p>
+                      <p className="text-muted-foreground">CTR</p>
+                    </div>
+                  </div>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
         )}
-      </CardContent>
-      <CardFooter className="p-4 border-t border-border bg-secondary/20">
-        <div className="flex w-full justify-between items-center gap-2">
-          <Button variant="outline" size="sm" className="flex-1" onClick={() => alert(`Editing ${ad.name}`)}>
-            <Edit3 className="mr-1.5 h-4 w-4" /> Edit
-          </Button>
-          <Button variant="default" size="sm" className="flex-1" onClick={handlePreviewClick}>
-            <Eye className="mr-1.5 h-4 w-4" /> Preview
-          </Button>
-        </div>
-      </CardFooter>
-    </Card>
+      </main>
+    </div>
   );
 };
 
-export default MyAdCard;
-
+export default AllAdsPage;
