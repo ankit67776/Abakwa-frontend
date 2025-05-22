@@ -2,10 +2,10 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { adsService } from '../../services/adsService'; // Adjusted path
-import type { Ad } from '@/types/ad'; // Using centralized Ad type
+import { adsService } from '../../services/adsService'; 
+import type { Ad } from '@/types/ad'; 
 import Header from '@/components/layout/Header';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2, PackageSearch } from 'lucide-react'; // Added PackageSearch
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
@@ -49,13 +49,15 @@ const AllAdsPage: React.FC = () => {
   };
 
   const getStatusColorClass = (status?: Ad['status']): string => {
+    // Use a consistent set of Tailwind classes based on the theme if possible, or define specific ones
+    // For now, keeping the direct color classes to match original intent
     switch (status?.toLowerCase()) {
-        case 'active': return 'bg-green-100 text-green-800 border-green-300';
-        case 'paused': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-        case 'ended': return 'bg-gray-100 text-gray-800 border-gray-300';
-        case 'scheduled': return 'bg-blue-100 text-blue-800 border-blue-300';
-        case 'under review': case 'in_review': return 'bg-purple-100 text-purple-800 border-purple-300';
-        case 'draft': case 'selected': return 'bg-indigo-100 text-indigo-800 border-indigo-300';
+        case 'active': return 'bg-green-100 text-green-800 border-green-300 dark:bg-green-800/30 dark:text-green-300 dark:border-green-700';
+        case 'paused': return 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-800/30 dark:text-yellow-300 dark:border-yellow-700';
+        case 'ended': return 'bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-700/30 dark:text-gray-400 dark:border-gray-600';
+        case 'scheduled': return 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-800/30 dark:text-blue-300 dark:border-blue-700';
+        case 'under review': case 'in_review': return 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-800/30 dark:text-purple-300 dark:border-purple-700';
+        case 'draft': case 'selected': return 'bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-800/30 dark:text-indigo-300 dark:border-indigo-700';
         default: return 'bg-muted text-muted-foreground border-border';
     }
   };
@@ -64,9 +66,9 @@ const AllAdsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Header />
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 pt-20"> {/* Added pt-20 for header */}
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 pt-20">
         <div className="px-4 sm:px-0 mb-8">
-          <h1 className="text-3xl font-bold tracking-tight text-primary sm:text-4xl">All Advertiser Ads</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">All Advertiser Ads</h1>
           <p className="mt-2 text-lg text-muted-foreground">
             Browse active advertising campaigns from all advertisers on the platform.
           </p>
@@ -96,7 +98,7 @@ const AllAdsPage: React.FC = () => {
                 <CardHeader className="p-0">
                   <div className="aspect-[16/9] bg-muted relative">
                     <Image
-                      src={ad.imageUrl || ad.thumbnailUrl || 'https://placehold.co/600x338.png?text=Ad'}
+                      src={ad.imageUrl || ad.thumbnailUrl || 'https://placehold.co/600x338.png'} // Removed text query
                       alt={ad.name}
                       fill
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
@@ -104,8 +106,8 @@ const AllAdsPage: React.FC = () => {
                       data-ai-hint={ad.aiHint || "advertisement"}
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        target.onerror = null; // prevent infinite loop if placeholder also fails
-                        target.src = 'https://placehold.co/600x338.png?text=Error';
+                        target.onerror = null; 
+                        target.src = 'https://placehold.co/600x338.png'; // Removed text query
                       }}
                     />
                   </div>
@@ -129,7 +131,7 @@ const AllAdsPage: React.FC = () => {
                     {ad.startDate && <p>Runs: {formatDate(ad.startDate)} - {ad.endDate ? formatDate(ad.endDate) : 'Ongoing'}</p>}
                   </div>
                 </CardContent>
-                <CardFooter className="p-3 border-t bg-secondary/30">
+                <CardFooter className="p-3 border-t bg-secondary/30 dark:bg-card/50">
                   <div className="grid grid-cols-3 gap-2 text-center text-xs w-full">
                     <div>
                       <p className="font-semibold text-foreground">{ad.impressions?.toLocaleString() ?? 'N/A'}</p>
@@ -141,7 +143,7 @@ const AllAdsPage: React.FC = () => {
                     </div>
                     <div>
                       <p className="font-semibold text-foreground">
-                        {typeof ad.ctr === 'number' ? `${ad.ctr.toFixed(2)}%` : (ad.ctr || 'N/A')}
+                        {typeof ad.ctr === 'number' ? `${ad.ctr.toFixed(2)}%` : (String(ad.ctr).replace('%','') || 'N/A') + (String(ad.ctr).includes('%') ? '%' : '')}
                       </p>
                       <p className="text-muted-foreground">CTR</p>
                     </div>
@@ -157,3 +159,5 @@ const AllAdsPage: React.FC = () => {
 };
 
 export default AllAdsPage;
+
+    

@@ -7,86 +7,81 @@ import AdBrowser from '@/components/publisher/AdBrowser';
 import SelectedAdList from '@/components/publisher/SelectedAdList';
 import PerformanceChart from '@/components/advertiser/PerformanceChart'; // Can be reused
 import { Ad } from '@/types/ad';
-import { useAuth } from '@/hooks/useAuth';
+// import { useAuth } from '@/hooks/useAuth'; // Auth temporarily bypassed
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, Search, ListChecks, BarChartHorizontal } from 'lucide-react';
+import { LayoutDashboard, Search, ListChecks, BarChartHorizontal, Eye, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { useRouter } from 'next/navigation';
 
 // Mock data - replace with API calls
 const mockAvailableAds: Ad[] = [
   {
     id: 'pub-ad-1', name: 'EcoFriendly Water Bottles', description: 'Promote sustainable living with our new eco-friendly water bottles.', status: 'Active',
-    imageUrl: 'https://placehold.co/600x400/a2d9ce/ffffff?text=Eco+Bottles', impressions: 12500, clicks: 350, ctr: 2.8, createdAt: '2023-05-15T10:30:00Z', format: 'image', size: '300x250', advertiser: { name: 'GreenCo' }
+    imageUrl: 'https://placehold.co/600x400.png', aiHint: 'eco friendly', impressions: 12500, clicks: 350, ctr: 2.8, createdAt: '2023-05-15T10:30:00Z', format: 'image', size: '300x250', advertiser: { name: 'GreenCo' }
   },
   {
     id: 'pub-ad-2', name: 'Smart Home Hub Launch', description: 'Introducing the Aether Hub - control your home with voice commands.', status: 'Active',
-    imageUrl: 'https://placehold.co/600x400/85c1e9/ffffff?text=Smart+Hub', impressions: 5000, clicks: 120, ctr: 2.4, createdAt: '2023-05-20T14:45:00Z', format: 'video', size: '16:9', advertiser: { name: 'TechForward' }
+    imageUrl: 'https://placehold.co/600x400.png', aiHint: 'smart home', impressions: 5000, clicks: 120, ctr: 2.4, createdAt: '2023-05-20T14:45:00Z', format: 'video', size: '16:9', advertiser: { name: 'TechForward' }
   },
   {
     id: 'pub-ad-3', name: 'Gourmet Coffee Subscription', description: 'Discover artisanal coffee beans delivered to your door.', status: 'Active',
-    imageUrl: 'https://placehold.co/600x400/d7bde2/ffffff?text=Coffee+Club', impressions: 8700, clicks: 310, ctr: 3.6, createdAt: '2023-05-10T09:15:00Z', format: 'image', size: '728x90', advertiser: { name: 'BeanMaster' }
+    imageUrl: 'https://placehold.co/600x400.png', aiHint: 'coffee subscription', impressions: 8700, clicks: 310, ctr: 3.6, createdAt: '2023-05-10T09:15:00Z', format: 'image', size: '728x90', advertiser: { name: 'BeanMaster' }
   },
 ];
 
 export default function PublisherDashboardPage() {
-  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  // const { user, isAuthenticated, isLoading: authLoading } = useAuth(); // Auth temporarily bypassed
   const router = useRouter();
+  const user = { name: "Demo User (Publisher)", role: "publisher", id: "temp-user-pub", email:"demo-pub@example.com" }; // Mock user
+  const isAuthenticated = true; // Mock auth
+  const authLoading = false; // Mock auth loading
 
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [availableAds, setAvailableAds] = useState<Ad[]>([]);
   const [selectedAds, setSelectedAds] = useState<Ad[]>([]);
 
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      router.replace('/login');
-    }
-  }, [authLoading, isAuthenticated, router]);
+  // useEffect(() => { // Auth temporarily bypassed
+  //   if (!authLoading && !isAuthenticated) {
+  //     router.replace('/login');
+  //   }
+  // }, [authLoading, isAuthenticated, router]);
   
   useEffect(() => {
     if (isAuthenticated) {
-      // TODO: Fetch available ads from API
-      // For now, using mock data
       setAvailableAds(mockAvailableAds);
-      // TODO: Fetch publisher's currently selected ads from API
     }
   }, [isAuthenticated]);
   
   const handleSelectAd = (ad: Ad) => {
     if (!selectedAds.some((selectedAd) => selectedAd.id === ad.id)) {
       setSelectedAds((prev) => [...prev, ad]);
-      // TODO: API call to save this selection for the publisher
     }
   };
   
   const handleRemoveAd = (adId: string) => {
     setSelectedAds((prev) => prev.filter((ad) => ad.id !== adId));
-    // TODO: API call to remove this selection for the publisher
   };
   
   const handleDownloadAdCode = (ad: Ad) => {
     console.log('Downloading code for ad:', ad.name);
-    // Actual download logic is in SelectedAdList component
   };
 
   const handlePreviewAd = (ad: Ad) => {
     console.log('Previewing ad:', ad.name);
-    // In a real app, this would open a modal with the ad preview.
-    // For now, an alert or a simple display.
     alert(`Previewing: ${ad.name}\nFormat: ${ad.format}\nSize: ${ad.size}`);
   };
 
 
-  if (authLoading || (!isAuthenticated && typeof window !== 'undefined')) {
-    return <div className="flex items-center justify-center min-h-screen">Loading dashboard...</div>;
-  }
-  if (!isAuthenticated) return null;
+  // if (authLoading || (!isAuthenticated && typeof window !== 'undefined')) { // Auth temporarily bypassed
+  //   return <div className="flex items-center justify-center min-h-screen">Loading dashboard...</div>;
+  // }
+  // if (!isAuthenticated) return null;
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header />
-      <main className="flex-grow pt-16"> {/* Added pt-16 for fixed header */}
+      <main className="flex-grow pt-16"> 
         <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <div className="md:flex md:items-center md:justify-between mb-8 px-4 sm:px-0">
             <div className="flex-1 min-w-0">
@@ -97,11 +92,6 @@ export default function PublisherDashboardPage() {
                 Find the right ads for your platform and track their performance.
               </p>
             </div>
-            {/* <div className="mt-4 flex md:mt-0 md:ml-4">
-              <Button>
-                Connect Google Analytics
-              </Button>
-            </div> */}
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -150,14 +140,14 @@ export default function PublisherDashboardPage() {
                   <PerformanceChart
                     title="Top Performing Ads (Revenue)"
                     description="Based on estimated revenue generated on your platform"
-                    data={[ // Mock data
+                    data={[ 
                       { label: 'Eco Bottles', value: 128.45, color: 'hsl(var(--chart-1))' },
                       { label: 'Smart Hub', value: 106.20, color: 'hsl(var(--chart-2))' },
                     ]}
                   />
                   <PerformanceChart
                     title="Traffic Sources (Mock)"
-                    data={[ // Mock data
+                    data={[ 
                       { label: 'Direct', value: 7500, color: 'hsl(var(--chart-3))' },
                       { label: 'Social', value: 5200, color: 'hsl(var(--chart-4))' },
                     ]}
@@ -174,7 +164,7 @@ export default function PublisherDashboardPage() {
               <SelectedAdList 
                 ads={selectedAds} 
                 onRemove={handleRemoveAd} 
-                onDownload={handleDownloadAdCode} // downloadCode logic is within SelectedAdList for now
+                onDownload={handleDownloadAdCode}
                 onPreview={handlePreviewAd}
               />
             </TabsContent>
@@ -187,7 +177,6 @@ export default function PublisherDashboardPage() {
                     <CardDescription>Detailed insights for ads on your platform.</CardDescription>
                   </CardHeader>
                   <CardContent>
-                     {/* Placeholder for more detailed performance stats and charts */}
                     <div className="mt-4 h-64 bg-muted rounded-lg flex items-center justify-center">
                       <p className="text-muted-foreground">Detailed performance charts coming soon.</p>
                     </div>
@@ -201,3 +190,5 @@ export default function PublisherDashboardPage() {
     </div>
   );
 }
+
+    

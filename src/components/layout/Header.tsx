@@ -5,17 +5,20 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Menu, X, ChevronDown } from 'lucide-react';
-import { Button } from '@/components/ui/button'; // Using ShadCN Button
-import { useAuth } from '@/hooks/useAuth'; // Using the new useAuth
+import { Button } from '@/components/ui/button';
+// import { useAuth } from '@/hooks/useAuth'; // Auth temporarily bypassed
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, isAuthenticated, logout, isLoading } = useAuth();
+  // const { user, isAuthenticated, logout, isLoading } = useAuth(); // Auth temporarily bypassed
+  const user = { name: "Demo User", role: "advertiser", id: "temp-user", email: "demo@example.com" }; // Mock user
+  const isAuthenticated = true; // Mock auth
+  const isLoading = false; // Mock auth loading
+  
   const pathname = usePathname();
   const router = useRouter();
 
   const isLandingPage = pathname === '/';
-  // Determine transparency based on scroll position for landing page
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
@@ -23,13 +26,13 @@ const Header: React.FC = () => {
       if (isLandingPage) {
         setIsScrolled(window.scrollY > 50);
       } else {
-        setIsScrolled(false); // Not transparent on other pages
+        setIsScrolled(false); 
       }
     };
 
     if (isLandingPage) {
       window.addEventListener('scroll', handleScroll);
-      handleScroll(); // Check initial scroll position
+      handleScroll(); 
     }
     
     return () => {
@@ -45,17 +48,19 @@ const Header: React.FC = () => {
   const navigation = [
     { name: 'Features', href: '/#features' },
     { name: 'How It Works', href: '/#how-it-works' },
-    { name: 'Pricing', href: '/#pricing' }, // Assuming pricing section exists or will be added
+    // { name: 'Pricing', href: '/#pricing' }, // Assuming pricing section exists or will be added
   ];
 
   const handleLogout = () => {
-    logout();
-    // router.push('/'); // Optionally redirect to home after logout
+    // logout(); // Auth temporarily bypassed
+    localStorage.removeItem('token'); // Manual cleanup if needed
+    localStorage.removeItem('user');
+    router.push('/login'); 
   };
   
-  if (isLoading && !isAuthenticated && pathname !=='/login' && pathname !=='/signup' && pathname !=='/') { // Avoid flickering on initial load for public pages
-     // return null; // Or a loading spinner for the header
-  }
+  // if (isLoading && !isAuthenticated && pathname !=='/login' && pathname !=='/signup' && pathname !=='/') { 
+  //    // return null; 
+  // }
 
 
   return (
@@ -66,11 +71,11 @@ const Header: React.FC = () => {
         <div className="flex justify-between items-center py-4 md:space-x-10">
           <div className="flex justify-start lg:w-0 lg:flex-1">
             <Link href="/" className="flex items-center">
-              <span className="sr-only">Abakwa</span>
+              <span className="sr-only">AdUploader Pro</span>
               <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
                 <span className="text-primary-foreground font-bold">A</span>
               </div>
-              <span className={`ml-2 text-xl font-bold ${isTransparentHeader ? 'text-white' : 'text-gray-900'}`}>Abakwa</span>
+              <span className={`ml-2 text-xl font-bold ${isTransparentHeader ? 'text-white' : 'text-gray-900'}`}>AdUploader Pro</span>
             </Link>
           </div>
 
@@ -100,6 +105,9 @@ const Header: React.FC = () => {
                     Dashboard
                 </Link>
             )}
+             <Link href="/all-ads" className={`text-base font-medium ${isTransparentHeader ? 'text-white hover:text-white/80' : 'text-gray-500 hover:text-gray-900'}`}>
+                All Ads
+            </Link>
           </nav>
 
           <div className="hidden md:flex items-center justify-end md:flex-1 lg:w-0">
@@ -114,7 +122,7 @@ const Header: React.FC = () => {
                     aria-haspopup="true"
                   > 
                     <span className="sr-only">Open user menu</span>
-                    <span className="mr-1">{user?.email}</span>
+                    <span className="mr-1">{user?.email || "User"}</span>
                     <ChevronDown className="h-4 w-4" />
                   </button>
                 </div>
@@ -122,9 +130,6 @@ const Header: React.FC = () => {
                   <Link href={user?.role === 'advertiser' ? '/advertiser/dashboard' : '/publisher/dashboard'} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                     Dashboard
                   </Link>
-                  {/* <Link href="/settings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                    Settings
-                  </Link> */}
                   <button
                     onClick={handleLogout}
                     className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -152,7 +157,6 @@ const Header: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile menu */}
       {isMenuOpen && (
         <div className="absolute top-0 inset-x-0 p-2 transition transform origin-top-right md:hidden">
           <div className="rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 overflow-hidden">
@@ -162,7 +166,7 @@ const Header: React.FC = () => {
                   <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
                     <span className="text-primary-foreground font-bold">A</span>
                   </div>
-                   <span className="ml-2 text-xl font-bold text-gray-900">Abakwa</span>
+                   <span className="ml-2 text-xl font-bold text-gray-900">AdUploader Pro</span>
                 </Link>
               </div>
               <div className="-mr-2">
@@ -192,23 +196,22 @@ const Header: React.FC = () => {
                     Dashboard
                 </Link>
             )}
+             <Link href="/all-ads" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">
+                All Ads
+            </Link>
             </div>
             {isAuthenticated ? (
               <div className="px-5 py-4 border-t border-gray-200">
                 <div className="flex items-center">
-                  {/* User avatar could go here */}
                   <div className="ml-3">
-                    <div className="text-base font-medium text-gray-800">{user?.name}</div>
-                    <div className="text-sm font-medium text-gray-500">{user?.email}</div>
+                    <div className="text-base font-medium text-gray-800">{user?.name || "User"}</div>
+                    <div className="text-sm font-medium text-gray-500">{user?.email || "user@example.com"}</div>
                   </div>
                 </div>
                 <div className="mt-3 space-y-1">
                   <Link href={user?.role === 'advertiser' ? '/advertiser/dashboard' : '/publisher/dashboard'} onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">
                     Dashboard
                   </Link>
-                  {/* <Link href="/settings" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">
-                    Settings
-                  </Link> */}
                   <button onClick={() => { handleLogout(); setIsMenuOpen(false); }} className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">
                     Sign out
                   </button>
@@ -232,3 +235,5 @@ const Header: React.FC = () => {
 };
 
 export default Header;
+
+    

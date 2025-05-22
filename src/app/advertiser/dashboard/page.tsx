@@ -2,34 +2,38 @@
 "use client";
 
 import React, { useEffect, useState, Suspense } from 'react';
-import { LayoutDashboard, UploadCloud, ListChecks, BarChartHorizontal } from 'lucide-react';
+import { LayoutDashboard, UploadCloud, ListChecks, BarChartHorizontal, Eye } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import UploadAdForm from '@/components/advertiser/UploadAdForm';
 import AdCard from '@/components/advertiser/AdCard';
 import PerformanceChart from '@/components/advertiser/PerformanceChart';
 import { Ad } from '@/types/ad';
-import { useAuth } from '@/hooks/useAuth';
+// import { useAuth } from '@/hooks/useAuth'; // Auth temporarily bypassed
 import axios from 'axios';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 
 
 const AdvertiserDashboardPage: React.FC = () => {
-  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  // const { user, isAuthenticated, isLoading: authLoading } = useAuth(); // Auth temporarily bypassed
   const router = useRouter();
+  const user = { name: "Demo User (Advertiser)", role: "advertiser", id: "temp-user", email: "demo@example.com" }; // Mock user
+  const isAuthenticated = true; // Mock auth
+  const authLoading = false; // Mock auth loading
 
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [ads, setAds] = useState<Ad[]>([]);
   const [loadingAds, setLoadingAds] = useState<boolean>(true);
   const [errorAds, setErrorAds] = useState<string | null>(null);  
 
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      router.replace('/login');
-    }
-  }, [authLoading, isAuthenticated, router]);
+  // useEffect(() => { // Auth temporarily bypassed
+  //   if (!authLoading && !isAuthenticated) {
+  //     router.replace('/login');
+  //   }
+  // }, [authLoading, isAuthenticated, router]);
   
   useEffect(() => {
     if (isAuthenticated) {
@@ -37,31 +41,24 @@ const AdvertiserDashboardPage: React.FC = () => {
         setLoadingAds(true);
         setErrorAds(null);
         try {
-          // Replace with your actual API endpoint and token handling
-          const token = localStorage.getItem('token');
-          if (!token) {
-            setErrorAds('Authentication token not found.');
-            setLoadingAds(false);
-            return;
-          }
-          // Assuming your API returns ads in a structure that can be mapped to the Ad type
-          // The following is a placeholder for your actual API call
-          // const response = await axios.get('http://localhost:3000/api/advertiser/ads', {
-          //   headers: { 'Authorization': `Bearer ${token}` }
-          // });
-          // For now, using mock data similar to what was in the original component
+          // const token = localStorage.getItem('token'); // Auth temporarily bypassed
+          // if (!token) {
+          //   setErrorAds('Authentication token not found.');
+          //   setLoadingAds(false);
+          //   return;
+          // }
+          
            await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API delay
            const mockApiResponse: any[] = [
-             // This should come from your backend
               {
                 id: '1', name: 'Summer Sale Banner Ad', format: 'image', status: 'Active', 
-                imageUrl: 'https://placehold.co/600x400.png?text=Summer+Ad', aiHint: 'summer sale', 
+                imageUrl: 'https://placehold.co/600x400.png', dataAiHint: 'summer sale', // Removed text query param
                 size: '728x90', startDate: '2024-07-01', endDate: '2024-07-31', 
                 impressions: 120500, clicks: 3450, ctr: '2.86%', description: 'A great summer sale!', createdAt: new Date().toISOString(),
               },
               {
                 id: '2', name: 'New Product Launch Video', format: 'video', status: 'Paused', 
-                imageUrl: 'https://placehold.co/600x400.png?text=Product+Video', aiHint: 'product launch', 
+                imageUrl: 'https://placehold.co/600x400.png', dataAiHint: 'product launch', // Removed text query param
                 size: 'Responsive', startDate: '2024-06-15', endDate: '2024-08-15', 
                 impressions: 75200, clicks: 1200, ctr: '1.59%', description: 'Launch video for new product.', createdAt: new Date().toISOString(),
               },
@@ -81,19 +78,21 @@ const AdvertiserDashboardPage: React.FC = () => {
 
   const handleAdUpload = async (formData: FormData) => {
     console.log('Uploading ad with form data:');
-    for (let [key, value] of formData.entries()) {
-      console.log(`${key}: ${value}`);
-    }
-    // TODO: Implement actual API call for ad upload
-    // For now, simulate and add to local state
+    // for (let [key, value] of formData.entries()) { // Keep for debugging if needed
+    //   console.log(`${key}: ${value}`);
+    // }
+
+    const files = formData.getAll('files') as File[]; // Get files from FormData
+
     return new Promise<void>((resolve) => {
       setTimeout(() => {
         const newAd: Ad = {
           id: Math.random().toString(36).substring(2, 9),
           name: formData.get('name') as string,
           description: formData.get('description') as string,
-          status: 'Under Review', // Or 'in_review' based on your Ad type status values
-          imageUrl: files.length > 0 ? URL.createObjectURL(files[0]) : 'https://placehold.co/600x400.png?text=New+Ad', // Basic preview
+          status: 'Under Review',
+          imageUrl: files.length > 0 ? URL.createObjectURL(files[0]) : 'https://placehold.co/600x400.png', // Basic preview, removed text query param
+          aiHint: 'new ad',
           impressions: 0,
           clicks: 0,
           ctr: 0,
@@ -101,10 +100,9 @@ const AdvertiserDashboardPage: React.FC = () => {
           format: formData.get('adFormat') as Ad['format'],
           size: formData.get('adSize') as string,
         };
-        const files = formData.getAll('files') as File[];
         
         setAds((prevAds) => [newAd, ...prevAds]);
-        setActiveTab('my-ads'); // Switch to my ads tab after upload
+        setActiveTab('my-ads'); 
         resolve();
       }, 1500);
     });
@@ -112,26 +110,24 @@ const AdvertiserDashboardPage: React.FC = () => {
   
   const handleViewAd = (ad: Ad) => {
     console.log('View ad:', ad);
-    // This would open a modal or navigate to a detailed view page
     alert(`Viewing ad: ${ad.name}`);
   };
   
   const handleViewPerformance = (ad: Ad) => {
     console.log('View performance for ad:', ad.id);
     setActiveTab('performance');
-    // Potentially set a state here to show performance for this specific ad
   };
 
-  if (authLoading || (!isAuthenticated && typeof window !== 'undefined')) {
-    return <div className="flex items-center justify-center min-h-screen">Loading dashboard...</div>;
-  }
-  if (!isAuthenticated) return null; // Should be handled by redirect
+  // if (authLoading || (!isAuthenticated && typeof window !== 'undefined')) { // Auth temporarily bypassed
+  //   return <div className="flex items-center justify-center min-h-screen">Loading dashboard...</div>;
+  // }
+  // if (!isAuthenticated) return null; // Should be handled by redirect
 
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header />
-      <main className="flex-grow pt-16"> {/* Added pt-16 for fixed header */}
+      <main className="flex-grow pt-16"> 
         <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <div className="md:flex md:items-center md:justify-between mb-8 px-4 sm:px-0">
             <div className="flex-1 min-w-0">
@@ -142,11 +138,6 @@ const AdvertiserDashboardPage: React.FC = () => {
                 Manage your ad campaigns and track their performance.
               </p>
             </div>
-            {/* <div className="mt-4 flex md:mt-0 md:ml-4">
-              <Button>
-                Connect Google Ad Manager
-              </Button>
-            </div> */}
           </div>
           
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -159,9 +150,7 @@ const AdvertiserDashboardPage: React.FC = () => {
 
             <TabsContent value="overview" className="mt-6 px-4 sm:px-0">
               <div className="space-y-6">
-                {/* Overview Cards - Simplified from user's code */}
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                  {/* Total Impressions Card */}
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">Total Impressions</CardTitle>
@@ -172,7 +161,6 @@ const AdvertiserDashboardPage: React.FC = () => {
                       <p className="text-xs text-muted-foreground">+8.1% from last week (mock)</p>
                     </CardContent>
                   </Card>
-                   {/* Total Clicks Card */}
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">Total Clicks</CardTitle>
@@ -183,7 +171,6 @@ const AdvertiserDashboardPage: React.FC = () => {
                       <p className="text-xs text-muted-foreground">+11.3% from last week (mock)</p>
                     </CardContent>
                   </Card>
-                  {/* Average CTR Card */}
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">Average CTR</CardTitle>
@@ -207,10 +194,10 @@ const AdvertiserDashboardPage: React.FC = () => {
                     title="Top Performing Ads (CTR)"
                     description="Based on click-through rate"
                     data={ads
-                        .filter(ad => ad.impressions && ad.impressions > 0) // Ensure impressions exist and are not zero
-                        .sort((a,b) => (typeof b.ctr === 'number' ? b.ctr : parseFloat(b.ctr || '0')) - (typeof a.ctr === 'number' ? a.ctr : parseFloat(a.ctr || '0')))
+                        .filter(ad => ad.impressions && ad.impressions > 0) 
+                        .sort((a,b) => (typeof b.ctr === 'number' ? b.ctr : parseFloat(String(b.ctr).replace('%','') || '0')) - (typeof a.ctr === 'number' ? a.ctr : parseFloat(String(a.ctr).replace('%','') || '0')))
                         .slice(0,3)
-                        .map((ad, i) => ({label: ad.name, value: typeof ad.ctr === 'number' ? ad.ctr : parseFloat(ad.ctr || '0'), color: `hsl(var(--chart-${(i%5)+1}))`}))
+                        .map((ad, i) => ({label: ad.name, value: typeof ad.ctr === 'number' ? ad.ctr : parseFloat(String(ad.ctr).replace('%','') || '0'), color: `hsl(var(--chart-${(i%5)+1}))`}))
                     }
                     percentage={true}
                   />
@@ -228,16 +215,15 @@ const AdvertiserDashboardPage: React.FC = () => {
             
             <TabsContent value="upload" className="mt-6 px-4 sm:px-0">
               <div className="max-w-3xl mx-auto">
-                <Card className="mb-5">
-                  <CardHeader>
-                    <CardTitle className="text-lg leading-6 font-medium text-foreground">
+                 {/* Removed Card wrapper around header text */}
+                <div className="mb-5"> 
+                    <h2 className="text-2xl font-semibold leading-6 text-foreground">
                       Upload New Ad
-                    </CardTitle>
-                    <CardDescription className="mt-2 max-w-xl text-sm text-muted-foreground">
+                    </h2>
+                    <p className="mt-2 max-w-xl text-sm text-muted-foreground">
                       Create a new ad to be displayed on publisher platforms.
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
+                    </p>
+                </div>
                 <Suspense fallback={<div>Loading form...</div>}>
                   <UploadAdForm onSubmit={handleAdUpload} />
                 </Suspense>
@@ -250,7 +236,6 @@ const AdvertiserDashboardPage: React.FC = () => {
                   <h3 className="text-lg leading-6 font-medium text-foreground">
                     My Ads
                   </h3>
-                  {/* Search input can be added here if needed */}
                 </div>
                 {loadingAds ? <p>Loading ads...</p> : 
                  errorAds ? <p className="text-destructive">{errorAds}</p> :
@@ -263,7 +248,6 @@ const AdvertiserDashboardPage: React.FC = () => {
                         ad={ad}
                         onView={handleViewAd}
                         onViewPerformance={handleViewPerformance}
-                        // Add onEdit, onDelete if needed
                       />
                     ))}
                   </div>
@@ -280,15 +264,9 @@ const AdvertiserDashboardPage: React.FC = () => {
                   </CardHeader>
                   <CardContent>
                   <div className="flex items-center justify-between mb-6">
-                    {/* Date range picker can be added here */}
                     <Button variant="outline">Export Data</Button>
                   </div>
                   
-                  <div className="grid grid-cols-1 gap-y-8 gap-x-6 sm:grid-cols-3 mb-8">
-                     {/* Stats like Total Impressions, Clicks, CTR - similar to overview */}
-                  </div>
-                  
-                  {/* Detailed chart placeholder */}
                   <div className="mt-8">
                     <div className="relative">
                       <div className="absolute inset-0 flex items-center" aria-hidden="true">
@@ -299,7 +277,7 @@ const AdvertiserDashboardPage: React.FC = () => {
                       </div>
                     </div>
                     <div className="mt-4 h-64 bg-muted rounded-lg flex items-center justify-center">
-                      <p className="text-muted-foreground">Interactive chart would be displayed here (e.g., using Recharts)</p>
+                      <p className="text-muted-foreground">Interactive chart would be displayed here</p>
                     </div>
                   </div>
                   </CardContent>
@@ -333,3 +311,5 @@ const AdvertiserDashboardPage: React.FC = () => {
 };
 
 export default AdvertiserDashboardPage;
+
+    
