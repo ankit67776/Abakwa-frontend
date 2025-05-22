@@ -28,9 +28,9 @@ const PublisherRegistrationForm: React.FC = () => {
     contactTitle: '',
     website: '',
     address: '',
-    gamContactName: 'Brandon Ross', // Pre-filled
-    gamEmail: 'jadeandzelda@gmail.com', // Pre-filled
-    gamNetworkId: '22339582871', // Pre-filled
+    gamContactName: '', // Changed from pre-filled
+    gamEmail: '', // Changed from pre-filled
+    gamNetworkId: '', // Changed from pre-filled
   });
   const [isLoading, setIsLoading] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
@@ -172,6 +172,7 @@ const PublisherRegistrationForm: React.FC = () => {
                   name="gamContactName"
                   value={formData.gamContactName}
                   onChange={handleChange}
+                  placeholder="Brandon Ross" // Placeholder added
                   required
                 />
               </FormField>
@@ -182,6 +183,7 @@ const PublisherRegistrationForm: React.FC = () => {
                   type="email"
                   value={formData.gamEmail}
                   onChange={handleChange}
+                  placeholder="jadeandzelda@gmail.com" // Placeholder added
                   required
                 />
               </FormField>
@@ -193,7 +195,7 @@ const PublisherRegistrationForm: React.FC = () => {
                   name="gamNetworkId"
                   value={formData.gamNetworkId}
                   onChange={handleChange}
-                  placeholder="e.g., 1234567890"
+                  placeholder="22339582871" // Placeholder added
                   required
                 />
               </FormField>
@@ -264,3 +266,5 @@ const PublisherRegistrationForm: React.FC = () => {
 };
 
 export default PublisherRegistrationForm;
+
+    
