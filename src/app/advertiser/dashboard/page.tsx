@@ -118,7 +118,7 @@ const AdvertiserDashboardPage: React.FC = () => {
       setErrorAds(null);
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get(`http://localhost:3000/api/ads`, {
+        const response = await axios.get(`https://aux-backend.onrender.com/api/ads`, {
           params: { advertiserId: currentUser.id },
           headers: { 'Authorization': `Bearer ${token}` },
         });
@@ -157,7 +157,7 @@ const AdvertiserDashboardPage: React.FC = () => {
       setErrorAdRequests(null);
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get(`http://localhost:3000/api/ad_requests`, {
+        const response = await axios.get(`https://aux-backend.onrender.com/api/ad_requests`, {
            params: { advertiser_id: currentUser.id }, 
            headers: { 'Authorization': `Bearer ${token}` },
         });
@@ -193,7 +193,7 @@ const AdvertiserDashboardPage: React.FC = () => {
       }
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.post('http://localhost:3000/api/ads', formData, {
+        const response = await axios.post('https://aux-backend.onrender.com/api/ads', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
             'Authorization': `Bearer ${token}`,
@@ -220,7 +220,7 @@ const AdvertiserDashboardPage: React.FC = () => {
     setProcessingRequestId(requestId);
     try {
       const token = localStorage.getItem('token');
-      await axios.patch(`http://localhost:3000/api/ad_requests/${requestId}/approve`, {}, {
+      await axios.patch(`https://aux-backend.onrender.com/api/ad_requests/${requestId}/approve`, {}, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       setAdRequests(prev => prev.map(req => req.requestId === requestId ? { ...req, requestStatus: 'approved' } : req).filter(req => req.requestStatus === 'pending'));
@@ -238,7 +238,7 @@ const AdvertiserDashboardPage: React.FC = () => {
     setProcessingRequestId(requestId);
     try {
       const token = localStorage.getItem('token');
-      await axios.patch(`http://localhost:3000/api/ad_requests/${requestId}/reject`, {}, {
+      await axios.patch(`https://aux-backend.onrender.com/api/ad_requests/${requestId}/reject`, {}, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       setAdRequests(prev => prev.map(req => req.requestId === requestId ? { ...req, requestStatus: 'rejected' } : req).filter(req => req.requestStatus === 'pending'));
