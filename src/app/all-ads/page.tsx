@@ -2,50 +2,141 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { adsService } from '../../services/adsService';
+import axios from 'axios';
 import type { Ad } from '@/types/ad';
 import Header from '@/components/layout/Header';
-import { AlertCircle, Loader2, PackageSearch, Filter as FilterIcon } from 'lucide-react'; // Added FilterIcon
+import { AlertCircle, Loader2, PackageSearch, Filter as FilterIcon, Send, CheckCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { useToast } from "@/hooks/use-toast";
 
 const ALL_STATUSES_VALUE = "_all_statuses_";
 const ALL_FORMATS_VALUE = "_all_formats_";
 
+interface StoredUser {
+  id: string;
+  name: string;
+  email: string;
+  role: 'advertiser' | 'publisher';
+}
+
+// Transformation function for backend ad data
+const transformBackendAdToFrontendAdForAllAds = (backendAd: any): Ad => {
+  const advertiserName = backendAd.user?.name || 'Unknown Advertiser';
+  const advertiserId = backendAd.user?.id;
+
+  return {
+    id: String(backendAd.id),
+    name: backendAd.title || 'Untitled Ad',
+    description: backendAd.description || 'No description available.',
+    status: backendAd.status?.toLowerCase() as Ad['status'] || 'unknown',
+    format: backendAd.ad_format as Ad['format'] || 'unknown',
+    imageUrl: backendAd.media_url || undefined,
+    aiHint: backendAd.ai_hint || backendAd.aiHint || 'advertisement',
+    size: backendAd.ad_size || 'N/A',
+    startDate: backendAd.start_date || undefined,
+    endDate: backendAd.end_date || undefined,
+    impressions: parseInt(String(backendAd.impressions), 10) || 0,
+    clicks: parseInt(String(backendAd.clicks), 10) || 0,
+    ctr: backendAd.ctr || '0.00%',
+    createdAt: backendAd.created_at || new Date().toISOString(),
+    advertiser: {
+      name: advertiserName,
+      id: advertiserId ? String(advertiserId) : undefined,
+    },
+    ad_txt_content: backendAd.ad_txt_content,
+    bid_strategy: backendAd.bid_strategy,
+    budget: backendAd.budget,
+    custom_height: backendAd.custom_height,
+    custom_width: backendAd.custom_width,
+    fallback_image: backendAd.fallback_image === 'true' || backendAd.fallback_image === true,
+    header_bidding: backendAd.header_bidding === 'true' || backendAd.header_bidding === true,
+    header_bidding_partners: backendAd.header_bidding_partners,
+    header_code: backendAd.header_code,
+    target_audience: backendAd.target_audience,
+    target_devices: backendAd.target_devices,
+    target_locations: backendAd.target_locations,
+    user_id: backendAd.user_id, // This is the advertiser's user_id
+    title: backendAd.title, // Keep original title if needed for other purposes
+  };
+};
+
+
 const AllAdsPage: React.FC = () => {
+  const [currentUser, setCurrentUser] = useState<StoredUser | null>(null);
   const [allAds, setAllAds] = useState<Ad[]>([]);
   const [filteredAds, setFilteredAds] = useState<Ad[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [requestingAdId, setRequestingAdId] = useState<string | null>(null);
+  const [requestedAdIds, setRequestedAdIds] = useState<string[]>([]);
+  const { toast } = useToast();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [selectedFormat, setSelectedFormat] = useState<string>('');
 
-  // Ad statuses and formats are derived from the ads data below
+  useEffect(() => {
+    const storedUserString = localStorage.getItem('user');
+    if (storedUserString) {
+      try {
+        const parsedUser: StoredUser = JSON.parse(storedUserString);
+        setCurrentUser(parsedUser);
+      } catch (error) {
+        console.error("Failed to parse user from localStorage:", error);
+        toast({
+            variant: "destructive",
+            title: "User Data Error",
+            description: "Could not load your user information.",
+        });
+      }
+    }
+  }, [toast]);
 
   useEffect(() => {
     const fetchAds = async () => {
       setLoading(true);
       setError(null);
       try {
-        const data = await adsService.getAllAds();
-        setAllAds(data);
-        setFilteredAds(data); // Initially, show all ads
-      } catch (err) {
-        setError('Failed to load ads. Please try again later.');
+        const token = localStorage.getItem('token');
+        const response = await axios.get('http://localhost:3000/api/all_ads', { // Updated endpoint
+          headers: {
+            'Authorization': `Bearer ${token}`, // Added Auth header
+          },
+        });
+        const fetchedAds = response.data.map((backendAd: any) => 
+          transformBackendAdToFrontendAdForAllAds(backendAd)
+        );
+        setAllAds(fetchedAds as Ad[]);
+        setFilteredAds(fetchedAds as Ad[]);
+      } catch (err: any) {
         console.error("Error fetching all ads:", err);
+        let errorMessage = 'Failed to load ads. Please try again later.';
+        if (axios.isAxiosError(err) && err.response?.status === 401) {
+          errorMessage = 'Authentication failed. Please log in again.';
+        } else if (axios.isAxiosError(err) && err.response?.data?.message) {
+            errorMessage = err.response.data.message;
+        } else if (err instanceof Error) {
+            errorMessage = err.message;
+        }
+        setError(errorMessage);
+        toast({
+            variant: "destructive",
+            title: "Error Fetching Ads",
+            description: errorMessage,
+        });
       } finally {
         setLoading(false);
       }
     };
 
     fetchAds();
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     let tempAds = allAds;
@@ -91,6 +182,69 @@ const AllAdsPage: React.FC = () => {
         case 'under review': case 'in_review': return 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-800/30 dark:text-purple-300 dark:border-purple-700';
         case 'draft': case 'selected': return 'bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-800/30 dark:text-indigo-300 dark:border-indigo-700';
         default: return 'bg-muted text-muted-foreground border-border';
+    }
+  };
+
+  const handleRequestAd = async (ad: Ad) => {
+    if (!currentUser) {
+        toast({
+            variant: "destructive",
+            title: "Not Logged In",
+            description: "You must be logged in as a publisher to request an ad unit.",
+        });
+        return;
+    }
+    if (currentUser.role !== 'publisher') {
+        toast({
+            variant: "destructive",
+            title: "Action Not Allowed",
+            description: "Only publishers can request ad units.",
+        });
+        return;
+    }
+
+    setRequestingAdId(ad.id);
+    const token = localStorage.getItem('token');
+
+    try {
+      const response = await axios.post(
+        'http://localhost:3000/api/ad_requests',
+        {
+          ad_id: ad.id, // Send only ad_id, backend derives publisher_id from token
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.status === 201 || response.status === 200) {
+        setRequestedAdIds(prev => [...prev, ad.id]);
+        toast({
+          title: "Request Sent!",
+          description: `Your request for the ad "${ad.name}" has been successfully submitted.`,
+          variant: "default",
+        });
+      } else {
+        throw new Error(response.data.message || `Request failed with status: ${response.status}`);
+      }
+    } catch (error: any) {
+      console.error(`Error requesting ad '${ad.name}':`, error);
+      let errorMessage = `Failed to send request for ad "${ad.name}". Please try again.`;
+      if (axios.isAxiosError(error) && error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      toast({
+        variant: "destructive",
+        title: "Request Failed",
+        description: errorMessage,
+      });
+    } finally {
+      setRequestingAdId(null);
     }
   };
 
@@ -163,7 +317,6 @@ const AllAdsPage: React.FC = () => {
           </CardContent>
         </Card>
 
-
         {loading ? (
           <div className="mt-12 flex flex-col items-center justify-center text-muted-foreground">
             <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
@@ -221,7 +374,7 @@ const AllAdsPage: React.FC = () => {
                     {ad.startDate && <p>Runs: {formatDate(ad.startDate)} - {ad.endDate ? formatDate(ad.endDate) : 'Ongoing'}</p>}
                   </div>
                 </CardContent>
-                <CardFooter className="p-3 border-t bg-secondary/30 dark:bg-card/50">
+                <CardFooter className="p-3 border-t bg-card/50 flex flex-col items-stretch gap-2">
                   <div className="grid grid-cols-3 gap-2 text-center text-xs w-full">
                     <div>
                       <p className="font-semibold text-foreground">{ad.impressions?.toLocaleString() ?? 'N/A'}</p>
@@ -238,6 +391,22 @@ const AllAdsPage: React.FC = () => {
                       <p className="text-muted-foreground">CTR</p>
                     </div>
                   </div>
+                  {currentUser?.role === 'publisher' && (
+                    <Button
+                      onClick={() => handleRequestAd(ad)}
+                      disabled={requestedAdIds.includes(ad.id) || requestingAdId === ad.id}
+                      className="w-full mt-2"
+                      variant={requestedAdIds.includes(ad.id) ? "secondary" : "default"}
+                    >
+                      {requestingAdId === ad.id ? (
+                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...</>
+                      ) : requestedAdIds.includes(ad.id) ? (
+                        <><CheckCircle className="mr-2 h-4 w-4" /> Request Sent</>
+                      ) : (
+                        <><Send className="mr-2 h-4 w-4" /> Request Ad Unit</>
+                      )}
+                    </Button>
+                  )}
                 </CardFooter>
               </Card>
             ))}
@@ -249,3 +418,6 @@ const AllAdsPage: React.FC = () => {
 };
 
 export default AllAdsPage;
+    
+
+    

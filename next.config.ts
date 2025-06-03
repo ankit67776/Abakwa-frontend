@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next';
 import webpack from 'webpack';
 
+
 const nextConfig: NextConfig = {
   /* config options here */
   typescript: {
@@ -28,7 +29,13 @@ const nextConfig: NextConfig = {
         hostname: 'images.pexels.com',
         port: '',
         pathname: '/**',
-      }
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '3000',
+        pathname: '/**'
+      },
     ],
   },
   webpack: (config, { isServer }) => {

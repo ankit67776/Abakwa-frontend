@@ -19,9 +19,9 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/avatar";
-// import { useAuth } from '@/hooks/useAuth'; // Auth temporarily bypassed
+import { useAuth } from '@/hooks/useAuth'; // Re-enable useAuth
 
-const getInitials = (name: string) => {
+const getInitials = (name?: string) => {
   if (!name) return "?";
   const names = name.split(' ');
   if (names.length === 1) return names[0].charAt(0).toUpperCase();
@@ -30,11 +30,7 @@ const getInitials = (name: string) => {
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  // const { user, isAuthenticated, logout, isLoading } = useAuth(); // Auth temporarily bypassed
-  // Mock user for now as auth is bypassed. Replace with actual user from useAuth when re-enabled.
-  const user = { name: "Demo Publisher", email: "publisher@example.com", role: "publisher", avatarUrl: undefined }; // Changed role to publisher
-  const isAuthenticated = true; // Mock auth
-  const isLoading = false; // Mock auth loading
+  const { user, isAuthenticated, logout, isLoading } = useAuth(); // Use actual auth state
   
   const pathname = usePathname();
   const router = useRouter();
@@ -47,38 +43,39 @@ const Header: React.FC = () => {
       if (isLandingPage) {
         setIsScrolled(window.scrollY > 50);
       } else {
-        setIsScrolled(false); 
+        // For non-landing pages, header is always solid
+        setIsScrolled(true); 
       }
     };
 
-    if (isLandingPage) {
-      window.addEventListener('scroll', handleScroll);
-      handleScroll(); 
-    }
+    // Always apply scroll listener to correctly set initial state on non-landing pages
+    window.addEventListener('scroll', handleScroll);
+    handleScroll(); // Call once to set initial state
     
     return () => {
-      if (isLandingPage) {
-        window.removeEventListener('scroll', handleScroll);
-      }
+      window.removeEventListener('scroll', handleScroll);
     };
-  }, [isLandingPage, pathname]);
+  }, [isLandingPage, pathname]); // Rerun if isLandingPage or pathname changes
 
+  // Adjust isTransparentHeader logic
+  // Header is transparent only on landing page, when not scrolled, and mobile menu is not open
   const isTransparentHeader = isLandingPage && !isScrolled && !isMenuOpen;
 
 
   const navigation = [
     { name: 'Features', href: '/#features' },
     { name: 'How It Works', href: '/#how-it-works' },
-    // { name: 'Pricing', href: '/#pricing' }, // Assuming pricing section exists or will be added
+    // { name: 'Pricing', href: '/#pricing' }, 
   ];
 
   const handleLogout = () => {
-    // logout(); // Auth temporarily bypassed
-    localStorage.removeItem('token'); // Manual cleanup if needed
-    localStorage.removeItem('user');
-    router.push('/login'); 
+    logout(); 
+    // router.push('/login'); // logout in AuthContext already handles redirect
   };
   
+  // Conditional rendering during auth loading can be tricky on the server.
+  // For now, we let it render based on initial (possibly null) auth state.
+  // A more robust solution might involve a skeleton loader or specific loading UI.
   // if (isLoading && !isAuthenticated && pathname !=='/login' && pathname !=='/signup' && pathname !=='/') { 
   //    // return null; 
   // }
@@ -86,7 +83,7 @@ const Header: React.FC = () => {
 
   return (
     <header
-      className={`fixed top-0 w-full z-50 transition-all duration-300 ${isTransparentHeader ? 'bg-transparent' : 'bg-white shadow-sm'}`}
+      className={`fixed top-0 w-full z-50 transition-all duration-300 ${isTransparentHeader ? 'bg-transparent' : 'bg-card shadow-sm'}`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4 md:space-x-10">
@@ -96,14 +93,14 @@ const Header: React.FC = () => {
               <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
                 <span className="text-primary-foreground font-bold">A</span>
               </div>
-              <span className={`ml-2 text-xl font-bold ${isTransparentHeader ? 'text-white' : 'text-gray-900'}`}>Abakwa</span>
+              <span className={`ml-2 text-xl font-bold ${isTransparentHeader ? 'text-white' : 'text-foreground'}`}>Abakwa</span>
             </Link>
           </div>
 
           <div className="-mr-2 -my-2 md:hidden">
             <button
               type="button"
-              className={`rounded-md p-2 inline-flex items-center justify-center ${isTransparentHeader ? 'text-white hover:bg-white/10' : 'text-gray-500 hover:bg-gray-100'}`}
+              className={`rounded-md p-2 inline-flex items-center justify-center ${isTransparentHeader ? 'text-white hover:bg-white/10' : 'text-muted-foreground hover:bg-muted/50'}`}
               onClick={() => setIsMenuOpen(true)}
             >
               <span className="sr-only">Open menu</span>
@@ -116,28 +113,30 @@ const Header: React.FC = () => {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`text-base font-medium ${isTransparentHeader ? 'text-white hover:text-white/80' : 'text-gray-500 hover:text-gray-900'}`}
+                className={`text-base font-medium ${isTransparentHeader ? 'text-white hover:text-white/80' : 'text-muted-foreground hover:text-foreground'}`}
               >
                 {item.name}
               </Link>
             ))}
-             {isAuthenticated && (user?.role === 'advertiser' || user?.role === 'publisher') && (
-                <Link href={user.role === 'advertiser' ? '/advertiser/dashboard' : '/publisher/dashboard'} className={`text-base font-medium ${isTransparentHeader ? 'text-white hover:text-white/80' : 'text-gray-500 hover:text-gray-900'}`}>
+             {isAuthenticated && user && (user?.role === 'advertiser' || user?.role === 'publisher') && (
+                <Link href={user.role === 'advertiser' ? '/advertiser/dashboard' : '/publisher/dashboard'} className={`text-base font-medium ${isTransparentHeader ? 'text-white hover:text-white/80' : 'text-muted-foreground hover:text-foreground'}`}>
                     Dashboard
                 </Link>
             )}
-             <Link href="/all-ads" className={`text-base font-medium ${isTransparentHeader ? 'text-white hover:text-white/80' : 'text-gray-500 hover:text-gray-900'}`}>
+             <Link href="/all-ads" className={`text-base font-medium ${isTransparentHeader ? 'text-white hover:text-white/80' : 'text-muted-foreground hover:text-foreground'}`}>
                 All Ads
             </Link>
           </nav>
 
           <div className="hidden md:flex items-center justify-end md:flex-1 lg:w-0">
-            {isAuthenticated && user ? (
+            {isLoading ? (
+                <div className="h-10 w-24 bg-muted/50 animate-pulse rounded-md"></div> // Simple skeleton loader
+            ) : isAuthenticated && user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className={`relative h-10 w-10 rounded-full p-0 focus:ring-2 ${isTransparentHeader ? 'focus:ring-white/50' : 'focus:ring-ring'}`}>
                     <Avatar className="h-9 w-9">
-                      <AvatarImage src={user.avatarUrl} alt={user.name} />
+                      <AvatarImage src={(user as any).avatarUrl} alt={user.name} />
                       <AvatarFallback className={`${isTransparentHeader && !isScrolled ? 'bg-white/20 text-white border border-white/50' : 'bg-muted'}`}>
                         {getInitials(user.name)}
                       </AvatarFallback>
@@ -165,7 +164,7 @@ const Header: React.FC = () => {
               </DropdownMenu>
             ) : (
               <>
-                <Link href="/login" className={`whitespace-nowrap text-base font-medium ${isTransparentHeader ? 'text-white hover:text-white/80' : 'text-gray-500 hover:text-gray-900'}`}>
+                <Link href="/login" className={`whitespace-nowrap text-base font-medium ${isTransparentHeader ? 'text-white hover:text-white/80' : 'text-muted-foreground hover:text-foreground'}`}>
                   Sign in
                 </Link>
                 <Button
@@ -185,20 +184,20 @@ const Header: React.FC = () => {
       {/* Mobile menu */}
       {isMenuOpen && (
         <div className="absolute top-0 inset-x-0 p-2 transition transform origin-top-right md:hidden">
-          <div className="rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 overflow-hidden">
+          <div className="rounded-lg shadow-lg bg-card ring-1 ring-border ring-opacity-5 overflow-hidden">
             <div className="px-5 pt-4 flex items-center justify-between">
               <div>
                 <Link href="/" className="flex items-center" onClick={() => setIsMenuOpen(false)}>
                   <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
                     <span className="text-primary-foreground font-bold">A</span>
                   </div>
-                   <span className="ml-2 text-xl font-bold text-gray-900">Abakwa</span>
+                   <span className="ml-2 text-xl font-bold text-foreground">Abakwa</span>
                 </Link>
               </div>
               <div className="-mr-2">
                 <button
                   type="button"
-                  className="bg-white rounded-md p-2 inline-flex items-center justify-center text-gray-400 hover:bg-gray-100 focus:outline-none"
+                  className="bg-card rounded-md p-2 inline-flex items-center justify-center text-muted-foreground hover:bg-muted/50 focus:outline-none"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   <span className="sr-only">Close menu</span>
@@ -211,46 +210,50 @@ const Header: React.FC = () => {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                  className="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-accent-foreground hover:bg-accent"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   {item.name}
                 </Link>
               ))}
-               {isAuthenticated && (user?.role === 'advertiser' || user?.role === 'publisher') && (
-                <Link href={user.role === 'advertiser' ? '/advertiser/dashboard' : '/publisher/dashboard'}  onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">
+               {isAuthenticated && user && (user?.role === 'advertiser' || user?.role === 'publisher') && (
+                <Link href={user.role === 'advertiser' ? '/advertiser/dashboard' : '/publisher/dashboard'}  onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-accent-foreground hover:bg-accent">
                     Dashboard
                 </Link>
             )}
-             <Link href="/all-ads" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">
+             <Link href="/all-ads" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-accent-foreground hover:bg-accent">
                 All Ads
             </Link>
             </div>
-            {isAuthenticated && user ? (
-              <div className="px-5 py-4 border-t border-gray-200">
+            {isLoading ? (
+                <div className="px-5 py-4 border-t border-border">
+                     <div className="h-8 w-full bg-muted/50 animate-pulse rounded-md"></div>
+                </div>
+            ) : isAuthenticated && user ? (
+              <div className="px-5 py-4 border-t border-border">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
                     <Avatar className="h-10 w-10">
-                       <AvatarImage src={user.avatarUrl} alt={user.name} />
+                       <AvatarImage src={(user as any).avatarUrl} alt={user.name} />
                        <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
                     </Avatar>
                   </div>
                   <div className="ml-3">
-                    <div className="text-base font-medium text-gray-800">{user.name}</div>
-                    <div className="text-sm font-medium text-gray-500">{user.email}</div>
+                    <div className="text-base font-medium text-foreground">{user.name}</div>
+                    <div className="text-sm font-medium text-muted-foreground">{user.email}</div>
                   </div>
                 </div>
                 <div className="mt-3 space-y-1">
-                  <Link href={user?.role === 'advertiser' ? '/advertiser/dashboard' : '/publisher/dashboard'} onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">
+                  <Link href={user?.role === 'advertiser' ? '/advertiser/dashboard' : '/publisher/dashboard'} onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-accent-foreground hover:bg-accent">
                     Dashboard
                   </Link>
-                  <button onClick={() => { handleLogout(); setIsMenuOpen(false); }} className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">
+                  <button onClick={() => { handleLogout(); setIsMenuOpen(false); }} className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-accent-foreground hover:bg-accent">
                     Sign out
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="px-5 py-4 border-t border-gray-200">
+              <div className="px-5 py-4 border-t border-border">
                 <Button variant="outline" className="w-full mb-2" onClick={() => { router.push('/login'); setIsMenuOpen(false); }}>
                   Sign in
                 </Button>

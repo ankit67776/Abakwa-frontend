@@ -3,26 +3,28 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation'; // Changed from react-router-dom
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Mail, Lock, User, AlertCircle, ArrowRight } from 'lucide-react';
-import { Button } from '@/components/ui/button'; // Using ShadCN Button
-import { Input } from '@/components/ui/input'; // Using ShadCN Input
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAuth } from '@/hooks/useAuth'; // Using the new useAuth
+import { useAuth } from '@/hooks/useAuth';
 import { GoogleLogin } from '@react-oauth/google';
 import { cn } from '@/lib/utils';
+import axios from 'axios'; // Import axios
 
 const SignupForm: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<'advertiser' | 'publisher'>('advertiser');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const router = useRouter();
-  const searchParams = useSearchParams(); // Changed from useLocation
-  const { signup: authSignup, handleGoogleLogin: authHandleGoogleLogin, checkAuthStatus } = useAuth(); // Renamed to avoid conflict
+  const searchParams = useSearchParams();
+  const { handleGoogleLogin: authHandleGoogleLogin, checkAuthStatus } = useAuth(); 
   
   useEffect(() => {
     const roleParam = searchParams.get('role');
@@ -34,24 +36,45 @@ const SignupForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long.');
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
-      const authResult = await authSignup(email, password, name, role);
-       if (authResult && authResult.user) {
-        checkAuthStatus(); // Ensure auth state is updated
-        if (role === 'publisher') {
-            router.push('/publisher-registration'); // Redirect to publisher registration
-        } else {
-            router.push('/advertiser/dashboard'); 
-        }
-      } else {
-        setError('Signup failed. Please try again.');
-      }
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message ||'An error occurred during signup. Please try again.');
-    } finally {
+      const response = await axios.post('http://localhost:3000/register', {
+        email,
+        password,
+        password_confirmation: confirmPassword, // Added password_confirmation
+        name,
+        role,
+      });
+      
       setIsLoading(false);
+      // Assuming signup response might not immediately log in the user or provide a tok  en
+      // We'll redirect to login after successful signup, where they can then log in.
+      // This is a common pattern if the backend doesn't auto-login after signup.
+      
+      if (role === 'publisher') {
+        // For publishers, redirect to the more detailed registration form first
+        // Potentially pass some initial data or a flag if needed
+        router.push('/publisher-registration');
+      } else {
+        // For advertisers, they might go to login or directly to dashboard if backend handles session
+        // For now, let's direct them to login to complete the flow.
+        router.push('/login?signupSuccess=true'); 
+      }
+
+    } catch (err: any) {
+      setIsLoading(false);
+      setError(err.response?.data?.message || err.message || 'An error occurred during signup. Please try again.');
     }
   };
 
@@ -59,12 +82,12 @@ const SignupForm: React.FC = () => {
     setError(null);
     setIsLoading(true);
     try {
-      const authResult = await authHandleGoogleLogin(credentialResponse, role); // Pass role for Google signup
+      const authResult = await authHandleGoogleLogin(credentialResponse, role);
       if (authResult && authResult.user) {
-        const userRole = authResult.user?.role || 'advertiser'; // Use role from authResult
-        checkAuthStatus();
+        const userRole = authResult.user?.role || 'advertiser';
+        // checkAuthStatus is called within authHandleGoogleLogin if successful
         if (userRole === 'publisher') {
-            router.push('/publisher-registration'); // Redirect to publisher registration
+            router.push('/publisher-registration');
         } else {
             router.push('/advertiser/dashboard');
         }
@@ -190,6 +213,25 @@ const SignupForm: React.FC = () => {
           </div>
 
           <div>
+            <Label htmlFor="confirm-password">Confirm Password</Label>
+            <div className="mt-1 relative rounded-md shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                </div>
+                <Input
+                    id="confirm-password"
+                    type="password"
+                    autoComplete="new-password"
+                    required
+                    className="pl-10"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                />
+            </div>
+          </div>
+
+          <div>
             <Button
               type="submit"
               className="w-full"
@@ -216,7 +258,7 @@ const SignupForm: React.FC = () => {
               onSuccess={onGoogleLoginSuccess}
               onError={onGoogleLoginError}
               useOneTap={false}
-              width="336px"
+              width="336px" // Standard width for Google button
             />
           </div>
         </div>

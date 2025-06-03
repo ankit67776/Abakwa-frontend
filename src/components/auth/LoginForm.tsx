@@ -3,14 +3,14 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation'; // Changed from react-router-dom
+import { useRouter } from 'next/navigation';
 import { Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button'; // Using ShadCN Button
-import { Input } from '@/components/ui/input'; // Using ShadCN Input
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAuth } from '@/hooks/useAuth'; // Using the new useAuth
+import { useAuth } from '@/hooks/useAuth';
 import { GoogleLogin } from '@react-oauth/google';
-import { cn } from '@/lib/utils';
+import axios from 'axios'; // Ensure axios is imported
 
 const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -19,7 +19,8 @@ const LoginForm: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const router = useRouter();
-  const { login, handleGoogleLogin: authHandleGoogleLogin, checkAuthStatus } = useAuth();
+  // We still need useAuth for GoogleLogin and checkAuthStatus
+  const { handleGoogleLogin: authHandleGoogleLogin, checkAuthStatus } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,13 +28,23 @@ const LoginForm: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const authResult = await login(email, password);
-      if (authResult && authResult.user) {
-        const role = authResult.user?.role || 'advertiser';
-        checkAuthStatus(); // Ensure auth state is updated before navigation
+      // Directly POST to the backend for email/password login
+      const response = await axios.post('http://localhost:3000/login', {
+        email,
+        password,
+      });
+      
+      const { token, user } = response.data; // Assuming backend returns token and user object
+
+      if (token && user) {
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+        checkAuthStatus(); // Update global auth state
+
+        const role = user?.role || 'advertiser';
         router.push(role === 'advertiser' ? '/advertiser/dashboard' : '/publisher/dashboard');
       } else {
-         setError('Login failed. Please check your credentials.');
+        setError('Login failed. Invalid response from server.');
       }
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || 'Invalid email or password. Please try again.');
@@ -49,7 +60,7 @@ const LoginForm: React.FC = () => {
       const authResult = await authHandleGoogleLogin(credentialResponse);
        if (authResult && authResult.user) {
         const role = authResult.user?.role || 'advertiser';
-        checkAuthStatus(); // Ensure auth state is updated
+        // checkAuthStatus(); // checkAuthStatus is called inside authHandleGoogleLogin if successful
         router.push(role === 'advertiser' ? '/advertiser/dashboard' : '/publisher/dashboard');
       } else {
         setError('Google Login failed. Please try again.');

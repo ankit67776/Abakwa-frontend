@@ -3,6 +3,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { Upload, X, Image as ImageIcon, FileText, Film, Calendar, DollarSign, Target, Info, Loader2, Eye, ChevronDown, ChevronUp } from 'lucide-react';
+import axios from 'axios'; // Keep axios import for potential future use if needed within component, but not for primary submit
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,7 +19,7 @@ import { cn } from '@/lib/utils';
 import AdPreview from './ad-preview'; // Adjusted path
 
 interface UploadAdFormProps {
-  onSubmit: (data: FormData) => Promise<void>;
+  onSubmit: (data: FormData) => Promise<void>; // Changed prop type
 }
 
 const adFormatOptions = [
@@ -49,6 +50,32 @@ const deviceOptions = [
   { value: 'mobile', label: 'Mobile Only' },
   { value: 'tablet', label: 'Tablet Only' },
 ];
+
+// Helper components/functions moved outside UploadAdForm
+const FormFieldContainer: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => (
+  <div className={cn("space-y-2", className)}>{children}</div>
+);
+
+const renderSectionTitle = (title: string, description?: string) => (
+  <div className="mb-6">
+    <h2 className="text-2xl font-semibold text-foreground">{title}</h2>
+    {description && <p className="text-muted-foreground mt-1">{description}</p>}
+  </div>
+);
+
+const renderInfoTooltip = (text: string) => (
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <Button variant="ghost" size="icon" className="h-5 w-5 p-0 ml-2 shrink-0 align-middle">
+        <Info className="h-4 w-4 text-muted-foreground" />
+      </Button>
+    </TooltipTrigger>
+    <TooltipContent className="max-w-xs bg-popover border-border text-popover-foreground shadow-lg rounded-md p-3">
+      <p className="text-sm">{text}</p>
+    </TooltipContent>
+  </Tooltip>
+);
+
 
 const UploadAdForm: React.FC<UploadAdFormProps> = ({ onSubmit }) => {
   const [name, setName] = useState('');
@@ -157,34 +184,35 @@ const UploadAdForm: React.FC<UploadAdFormProps> = ({ onSubmit }) => {
     
     setIsLoading(true);
     const formData = new FormData();
-    formData.append('name', name);
-    formData.append('description', description);
-    formData.append('adFormat', adFormat);
-    formData.append('adSize', adSize);
+    formData.append('ad[title]', name);
+    formData.append('ad[description]', description);
+    formData.append('ad[ad_format]', adFormat);
+    formData.append('ad[ad_size]', adSize);
     if (adSize === 'custom') {
-      formData.append('customWidth', customWidth);
-      formData.append('customHeight', customHeight);
+      formData.append('ad[custom_width]', customWidth);
+      formData.append('ad[custom_height]', customHeight);
     }
-    formData.append('adTxtContent', adTxtContent);
-    formData.append('headerCode', headerCode);
-    formData.append('headerBidding', String(headerBidding));
-    formData.append('headerBiddingPartners', headerBiddingPartners);
-    formData.append('fallbackImage', String(fallbackImage));
-    formData.append('startDate', startDate);
-    formData.append('endDate', endDate);
-    formData.append('budget', budget);
-    formData.append('bidStrategy', bidStrategy);
-    formData.append('targetAudience', targetAudience);
-    formData.append('targetLocations', targetLocations);
-    formData.append('targetDevices', targetDevices);
-    files.forEach((file) => formData.append('files', file));
+    formData.append('ad[ad_txt_content]', adTxtContent);
+    formData.append('ad[header_code]', headerCode);
+    formData.append('ad[header_bidding]', String(headerBidding));
+    formData.append('ad[header_bidding_partners]', headerBiddingPartners);
+    formData.append('ad[fallback_image]', String(fallbackImage));
+    formData.append('ad[start_date]', startDate);
+    formData.append('ad[end_date]', endDate);
+    formData.append('ad[budget]', budget);
+    formData.append('ad[bid_strategy]', bidStrategy);
+    formData.append('ad[target_audience]', targetAudience);
+    formData.append('ad[target_locations]', targetLocations);
+    formData.append('ad[target_devices]', targetDevices);
+    files.forEach((file) => formData.append('ad[media]', file));
     
     try {
-      await onSubmit(formData);
+      // Removed direct axios call, parent component will handle submission
+      await onSubmit(formData); 
       resetForm();
     } catch (error) {
-      console.error('Error uploading ad:', error);
-      // Potentially show an error toast to the user
+      console.error('Error submitting ad form:', error); // Modified error message context
+      // Potentially show an error toast to the user, handled by parent or here
     } finally {
       setIsLoading(false);
     }
@@ -204,31 +232,6 @@ const UploadAdForm: React.FC<UploadAdFormProps> = ({ onSubmit }) => {
     customHeight,
     adTxtContent,
   };
-
-  const renderSectionTitle = (title: string, description?: string) => (
-    <div className="mb-6">
-      <h2 className="text-2xl font-semibold text-foreground">{title}</h2>
-      {description && <p className="text-muted-foreground mt-1">{description}</p>}
-    </div>
-  );
-  
-  const renderInfoTooltip = (text: string) => (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-5 w-5 p-0 ml-2 shrink-0 align-middle">
-          <Info className="h-4 w-4 text-muted-foreground" />
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent className="max-w-xs bg-popover border-border text-popover-foreground shadow-lg rounded-md p-3">
-        <p className="text-sm">{text}</p>
-      </TooltipContent>
-    </Tooltip>
-  );
-
-
-  const FormFieldContainer: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => (
-    <div className={cn("space-y-2", className)}>{children}</div>
-  );
 
   return (
     <>
@@ -362,9 +365,7 @@ const UploadAdForm: React.FC<UploadAdFormProps> = ({ onSubmit }) => {
                 <AccordionItem value={item.id} key={item.id} className="border rounded-xl shadow-sm overflow-hidden bg-card">
                   <AccordionTrigger className="px-6 py-4 text-lg font-medium hover:no-underline hover:bg-secondary/50 transition-colors data-[state=open]:bg-secondary/50 data-[state=open]:border-b">
                     <div className="flex items-center space-x-3">
-                       {/* The icon part is handled by AccordionTrigger itself in ShadCN if passed as child */}
-                       {/* {React.cloneElement(item.icon, { className: cn(item.icon.props.className, "group-data-[state=open]:hidden") })} 
-                       <ChevronUp className="h-5 w-5 shrink-0 transition-transform duration-200 text-primary group-data-[state=closed]:hidden" /> */}
+                      {/* Icon is now part of AccordionTrigger's children in ShadCN, or use custom approach */}
                       <div>
                         {item.title}
                         <p className="text-sm font-normal text-muted-foreground mt-0.5">{item.description}</p>
@@ -487,7 +488,7 @@ const UploadAdForm: React.FC<UploadAdFormProps> = ({ onSubmit }) => {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full sm:w-auto bg-accent hover:bg-accent/90" // Kept accent color as per user's original
+                className="w-full sm:w-auto bg-accent hover:bg-accent/90" 
                 size="lg"
               >
                 {isLoading ? (
@@ -512,3 +513,4 @@ const UploadAdForm: React.FC<UploadAdFormProps> = ({ onSubmit }) => {
 };
 
 export default UploadAdForm;
+

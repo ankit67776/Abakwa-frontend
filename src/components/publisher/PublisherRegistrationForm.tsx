@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { AlertCircle, Building, User, Mail, Globe, Home, Briefcase, Network, Info, CheckCircle, ExternalLink } from 'lucide-react';
+import { cn } from '@/lib/utils'; // Added cn import for consistency if FormField needs it, though not strictly used by it now
 
 interface PublisherFormData {
   companyName: string;
@@ -21,6 +22,26 @@ interface PublisherFormData {
   gamNetworkId: string;
 }
 
+// Define FormField outside the PublisherRegistrationForm component
+interface FormFieldProps {
+  label: string;
+  id: string;
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+  description?: string;
+}
+
+const FormField: React.FC<FormFieldProps> = ({label, id, icon, children, description}) => (
+  <div className="space-y-1.5">
+    <Label htmlFor={id} className="flex items-center text-sm font-medium text-foreground/90">
+      {icon && React.cloneElement(icon as React.ReactElement, { className: "mr-2 h-4 w-4 text-muted-foreground" })}
+      {label}
+    </Label>
+    {children}
+    {description && <p className="text-xs text-muted-foreground">{description}</p>}
+  </div>
+);
+
 const PublisherRegistrationForm: React.FC = () => {
   const [formData, setFormData] = useState<PublisherFormData>({
     companyName: '',
@@ -28,9 +49,9 @@ const PublisherRegistrationForm: React.FC = () => {
     contactTitle: '',
     website: '',
     address: '',
-    gamContactName: '', // Changed from pre-filled
-    gamEmail: '', // Changed from pre-filled
-    gamNetworkId: '', // Changed from pre-filled
+    gamContactName: '',
+    gamEmail: '',
+    gamNetworkId: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
@@ -54,31 +75,23 @@ const PublisherRegistrationForm: React.FC = () => {
 
     if (isSuccess) {
       setSubmitMessage('Registration data submitted successfully! We will review your application and get back to you soon.');
+      // Optionally reset form:
+      // setFormData({ companyName: '', contactName: '', contactTitle: '', website: '', address: '', gamContactName: '', gamEmail: '', gamNetworkId: '' });
     } else {
       setSubmitError('There was an issue submitting your registration. Please try again later.');
     }
     setIsLoading(false);
   };
 
-  const FormField: React.FC<{label: string, id: string, icon?: React.ReactNode, children: React.ReactNode, description?: string}> = ({label, id, icon, children, description}) => (
-    <div className="space-y-1.5">
-      <Label htmlFor={id} className="flex items-center text-sm font-medium text-foreground/90">
-        {icon && React.cloneElement(icon as React.ReactElement, { className: "mr-2 h-4 w-4 text-muted-foreground" })}
-        {label}
-      </Label>
-      {children}
-      {description && <p className="text-xs text-muted-foreground">{description}</p>}
-    </div>
-  );
-
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       <Card className="shadow-lg rounded-xl overflow-hidden">
         <CardHeader className="p-6 sm:p-8 border-b">
-          <CardTitle className="text-2xl font-semibold text-foreground">
+          <CardTitle className="text-2xl font-semibold text-foreground flex items-center">
+            <Building className="mr-3 h-6 w-6 text-primary" />
             Publisher & GAM Information
           </CardTitle>
-          <CardDescription className="text-muted-foreground">
+          <CardDescription className="text-muted-foreground pl-10"> {/* Aligned with title text */}
             Please provide your company, contact, and Google Ad Manager details.
           </CardDescription>
         </CardHeader>
@@ -86,8 +99,8 @@ const PublisherRegistrationForm: React.FC = () => {
           {/* Publisher Details Section */}
           <div>
             <h3 className="text-lg font-medium text-primary mb-4 flex items-center">
-              <Building className="mr-2 h-5 w-5" />
-              Company Information
+              <User className="mr-2 h-5 w-5" />
+              Company & Contact Information
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField label="Company Name" id="companyName" icon={<Building />}>
@@ -111,30 +124,6 @@ const PublisherRegistrationForm: React.FC = () => {
                   required
                 />
               </FormField>
-            </div>
-            <div className="mt-6">
-              <FormField label="Company Address" id="address" icon={<Home />}>
-                <Textarea
-                  id="address"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleChange}
-                  placeholder="e.g., 123 Main St, Anytown, USA 12345"
-                  rows={3}
-                />
-              </FormField>
-            </div>
-          </div>
-
-          <Separator className="my-8" />
-
-          {/* Contact Person Section */}
-          <div>
-            <h3 className="text-lg font-medium text-primary mb-4 flex items-center">
-              <User className="mr-2 h-5 w-5" />
-              Main Contact Person
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField label="Contact Name" id="contactName" icon={<User />}>
                 <Input
                   id="contactName"
@@ -155,6 +144,18 @@ const PublisherRegistrationForm: React.FC = () => {
                 />
               </FormField>
             </div>
+            <div className="mt-6">
+              <FormField label="Company Address" id="address" icon={<Home />}>
+                <Textarea
+                  id="address"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  placeholder="e.g., 123 Main St, Anytown, USA 12345"
+                  rows={3}
+                />
+              </FormField>
+            </div>
           </div>
 
           <Separator className="my-8" />
@@ -172,7 +173,7 @@ const PublisherRegistrationForm: React.FC = () => {
                   name="gamContactName"
                   value={formData.gamContactName}
                   onChange={handleChange}
-                  placeholder="Brandon Ross" // Placeholder added
+                  placeholder="Brandon Ross"
                   required
                 />
               </FormField>
@@ -183,7 +184,7 @@ const PublisherRegistrationForm: React.FC = () => {
                   type="email"
                   value={formData.gamEmail}
                   onChange={handleChange}
-                  placeholder="jadeandzelda@gmail.com" // Placeholder added
+                  placeholder="jadeandzelda@gmail.com"
                   required
                 />
               </FormField>
@@ -195,7 +196,7 @@ const PublisherRegistrationForm: React.FC = () => {
                   name="gamNetworkId"
                   value={formData.gamNetworkId}
                   onChange={handleChange}
-                  placeholder="22339582871" // Placeholder added
+                  placeholder="22339582871"
                   required
                 />
               </FormField>
@@ -225,7 +226,7 @@ const PublisherRegistrationForm: React.FC = () => {
               </p>
               <p className="text-xs mt-2 text-muted-foreground/80">
                 This allows us to securely fetch performance data. All data is handled according to our privacy policy.
-                Need help? <a href="#" className="text-primary hover:underline">View instructions</a>.
+                Need help? <a href="#" className="text-primary hover:underline">View instructions <ExternalLink className="inline-block h-3 w-3 ml-0.5" /></a>.
               </p>
             </div>
           </div>
