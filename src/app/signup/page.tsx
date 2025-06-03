@@ -1,10 +1,21 @@
 
 "use client";
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import SignupForm from '@/components/auth/SignupForm';
+import { Loader2 } from 'lucide-react';
+
+function SignupFormFallback() {
+  return (
+    <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+      <div className="bg-card py-8 px-4 shadow sm:rounded-lg sm:px-10 min-h-[400px] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    </div>
+  );
+}
 
 export default function SignupPage() {
   return (
@@ -20,7 +31,9 @@ export default function SignupPage() {
             </Link>
           </p>
         </div>
-        <SignupForm />
+        <Suspense fallback={<SignupFormFallback />}>
+          <SignupForm />
+        </Suspense>
       </main>
     </div>
   );
