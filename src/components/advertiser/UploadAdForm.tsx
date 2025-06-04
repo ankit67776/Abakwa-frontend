@@ -177,10 +177,10 @@ const UploadAdForm: React.FC<UploadAdFormProps> = ({ onSubmit }) => {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (files.length === 0 && adFormat !== 'text' && !(adFormat === 'html5' && !fallbackImage)) { 
-      alert('Please upload at least one file for non-text ads or HTML5 ads without fallback.');
-      return;
-    }
+    // if (files.length === 0 && adFormat !== 'text' && !(adFormat === 'html5' && !fallbackImage)) { 
+    //   alert('Please upload at least one file for non-text ads or HTML5 ads without fallback.');
+    //   return;
+    // }
     
     setIsLoading(true);
     const formData = new FormData();
