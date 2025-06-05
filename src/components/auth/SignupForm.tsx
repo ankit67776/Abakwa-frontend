@@ -49,7 +49,7 @@ const SignupForm: React.FC = () => {
     setIsLoading(true);
     
     try {
-      const response = await axios.post('http://localhost:3000/register', {
+      const response = await axios.post('https://aux-backend.onrender.com/register', {
         email,
         password,
         password_confirmation: confirmPassword, // Added password_confirmation
