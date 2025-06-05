@@ -29,7 +29,7 @@ const LoginForm: React.FC = () => {
 
     try {
       // Directly POST to the backend for email/password login
-      const response = await axios.post('https://aux-backend.onrender.com/login', {
+      const response = await axios.post('http://localhost:3000/login', {
         email,
         password,
       });

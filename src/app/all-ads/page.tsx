@@ -104,7 +104,7 @@ const AllAdsPage: React.FC = () => {
       setError(null);
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get('https://aux-backend.onrender.com/api/all_ads', { // Updated endpoint
+        const response = await axios.get('http://localhost:3000/api/all_ads', { // Updated endpoint
           headers: {
             'Authorization': `Bearer ${token}`, // Added Auth header
           },
