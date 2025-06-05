@@ -112,7 +112,7 @@ export default function PublisherDashboardPage() {
       try {
         const token = localStorage.getItem('token');
         // The backend should infer publisher_id from the token
-        const response = await axios.get(`http://localhost:3000/api/ad_requests`, { 
+        const response = await axios.get(`https://aux-backend.onrender.com/api/ad_requests`, { 
           headers: {
             'Authorization': `Bearer ${token}`,
           },
