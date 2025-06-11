@@ -29,7 +29,7 @@ const LoginForm: React.FC = () => {
 
     try {
       // Directly POST to the backend for email/password login
-      const response = await axios.post('http://45.33.103.32:3000/login', {
+      const response = await axios.post('https://abakwa.squaregroup.tech/login', {
         email,
         password,
       });

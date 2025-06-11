@@ -49,7 +49,7 @@ const SignupForm: React.FC = () => {
     setIsLoading(true);
     
     try {
-      const response = await axios.post('http://45.33.103.32:3000/register', {
+      const response = await axios.post('https://abakwa.squaregroup.tech/register', {
         email,
         password,
         password_confirmation: confirmPassword, // Added password_confirmation

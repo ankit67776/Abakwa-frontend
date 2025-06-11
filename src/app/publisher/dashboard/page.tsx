@@ -112,7 +112,7 @@ export default function PublisherDashboardPage() {
       try {
         const token = localStorage.getItem('token');
         // The backend should infer publisher_id from the token
-        const response = await axios.get(`http://45.33.103.32:3000/api/ad_requests`, { 
+        const response = await axios.get(`https://abakwa.squaregroup.tech/api/ad_requests`, { 
           headers: {
             'Authorization': `Bearer ${token}`,
           },
