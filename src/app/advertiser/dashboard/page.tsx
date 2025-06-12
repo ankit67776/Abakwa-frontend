@@ -157,7 +157,7 @@ const AdvertiserDashboardPage: React.FC = () => {
       setErrorAdRequests(null);
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get(`https://abakwa.squaregroup.tech/api/ad_requests`, {
+        const response = await axios.get(`https://abakwa.squaregroup.tech/api/requests`, {
            params: { advertiser_id: currentUser.id }, 
            headers: { 'Authorization': `Bearer ${token}` },
         });
@@ -220,7 +220,7 @@ const AdvertiserDashboardPage: React.FC = () => {
     setProcessingRequestId(requestId);
     try {
       const token = localStorage.getItem('token');
-      await axios.patch(`https://abakwa.squaregroup.tech/api/ad_requests/${requestId}/approve`, {}, {
+      await axios.patch(`https://abakwa.squaregroup.tech/api/requests/${requestId}/approve`, {}, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       setAdRequests(prev => prev.map(req => req.requestId === requestId ? { ...req, requestStatus: 'approved' } : req).filter(req => req.requestStatus === 'pending'));
@@ -238,7 +238,7 @@ const AdvertiserDashboardPage: React.FC = () => {
     setProcessingRequestId(requestId);
     try {
       const token = localStorage.getItem('token');
-      await axios.patch(`https://abakwa.squaregroup.tech/api/ad_requests/${requestId}/reject`, {}, {
+      await axios.patch(`https://abakwa.squaregroup.tech/api/requests/${requestId}/reject`, {}, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       setAdRequests(prev => prev.map(req => req.requestId === requestId ? { ...req, requestStatus: 'rejected' } : req).filter(req => req.requestStatus === 'pending'));
