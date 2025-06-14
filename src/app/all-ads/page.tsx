@@ -208,7 +208,7 @@ const AllAdsPage: React.FC = () => {
 
     try {
       const response = await axios.post(
-        'https://abakwa.squaregroup.tech/api/ad_requests',
+        'https://abakwa.squaregroup.tech/api/requests',
         {
           ad_id: ad.id, // Send only ad_id, backend derives publisher_id from token
         },
