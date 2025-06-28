@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   description: 'Streamline your ad creative uploads and ad exchange with Abakwa.',
 };
 
-// IMPORTANT: Replace with your actual Google Client ID
+// IMPORTANT: Replace with your actual Google Client ID from environment variable
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID_HERE";
 
 export default function RootLayout({
@@ -30,6 +30,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === "YOUR_GOOGLE_CLIENT_ID_HERE") {
+    console.warn("Google Client ID is not configured. Google OAuth will not work. Please set NEXT_PUBLIC_GOOGLE_CLIENT_ID in your .env file.");
+  }
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>

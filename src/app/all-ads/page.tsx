@@ -15,6 +15,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from "@/hooks/use-toast";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+
 const ALL_STATUSES_VALUE = "_all_statuses_";
 const ALL_FORMATS_VALUE = "_all_formats_";
 
@@ -25,7 +27,6 @@ interface StoredUser {
   role: 'advertiser' | 'publisher';
 }
 
-// Transformation function for backend ad data
 const transformBackendAdToFrontendAdForAllAds = (backendAd: any): Ad => {
   const advertiserName = backendAd.user?.name || 'Unknown Advertiser';
   const advertiserId = backendAd.user?.id;
@@ -61,8 +62,8 @@ const transformBackendAdToFrontendAdForAllAds = (backendAd: any): Ad => {
     target_audience: backendAd.target_audience,
     target_devices: backendAd.target_devices,
     target_locations: backendAd.target_locations,
-    user_id: backendAd.user_id, // This is the advertiser's user_id
-    title: backendAd.title, // Keep original title if needed for other purposes
+    user_id: backendAd.user_id, 
+    title: backendAd.title, 
   };
 };
 
@@ -100,13 +101,19 @@ const AllAdsPage: React.FC = () => {
 
   useEffect(() => {
     const fetchAds = async () => {
+      if (!API_BASE_URL) {
+        setError("API URL not configured. Please contact support.");
+        setLoading(false);
+        toast({ variant: "destructive", title: "Configuration Error", description: "API URL is missing." });
+        return;
+      }
       setLoading(true);
       setError(null);
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get('https://abakwa.squaregroup.tech/api/all_ads', { // Updated endpoint
+        const response = await axios.get(`${API_BASE_URL}/all_ads`, { 
           headers: {
-            'Authorization': `Bearer ${token}`, // Added Auth header
+            'Authorization': `Bearer ${token}`, 
           },
         });
         const fetchedAds = response.data.map((backendAd: any) => 
@@ -186,6 +193,10 @@ const AllAdsPage: React.FC = () => {
   };
 
   const handleRequestAd = async (ad: Ad) => {
+    if (!API_BASE_URL) {
+        toast({ variant: "destructive", title: "Configuration Error", description: "API URL is missing." });
+        return;
+    }
     if (!currentUser) {
         toast({
             variant: "destructive",
@@ -208,9 +219,9 @@ const AllAdsPage: React.FC = () => {
 
     try {
       const response = await axios.post(
-        'https://abakwa.squaregroup.tech/api/requests',
+        `${API_BASE_URL}/ad_requests`,
         {
-          ad_id: ad.id, // Send only ad_id, backend derives publisher_id from token
+          ad_id: ad.id, 
         },
         {
           headers: {
@@ -418,6 +429,4 @@ const AllAdsPage: React.FC = () => {
 };
 
 export default AllAdsPage;
-    
-
     

@@ -2,18 +2,20 @@
 "use client";
 
 import React, { useEffect, useState, Suspense } from 'react';
+import { useRouter } from 'next/navigation'; // Added for redirection
 import { LayoutDashboard, UploadCloud, ListChecks, BarChartHorizontal, Eye, Activity, MailQuestion, Loader2 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import UploadAdForm from '@/components/advertiser/UploadAdForm';
 import AdCard from '@/components/advertiser/AdCard';
-import AdRequestCard from '@/components/advertiser/AdRequestCard'; // New component
+import AdRequestCard from '@/components/advertiser/AdRequestCard';
 import PerformanceChart from '@/components/advertiser/PerformanceChart';
-import type { Ad, AdRequest } from '@/types/ad'; // AdRequest type added
+import type { Ad, AdRequest } from '@/types/ad';
 import axios from 'axios';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from '@/hooks/useAuth'; // Added for auth check
 
 interface StoredUser {
   id: string;
@@ -21,6 +23,8 @@ interface StoredUser {
   email: string;
   role: 'advertiser' | 'publisher';
 }
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 const transformBackendAdToFrontendAd = (backendAd: any, currentUserName: string): Ad => {
   return {
@@ -81,6 +85,9 @@ const transformBackendAdRequestData = (backendRequest: any): AdRequest => {
 
 const AdvertiserDashboardPage: React.FC = () => {
   const { toast } = useToast();
+  const { user: authUser, isAuthenticated: isAuthContextAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const router = useRouter();
+  
   const [currentUser, setCurrentUser] = useState<StoredUser | null>(null);
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [ads, setAds] = useState<Ad[]>([]);
@@ -92,24 +99,30 @@ const AdvertiserDashboardPage: React.FC = () => {
   const [errorAdRequests, setErrorAdRequests] = useState<string | null>(null);
   const [processingRequestId, setProcessingRequestId] = useState<string | null>(null);
 
-
+  // Effect for authentication and authorization check
   useEffect(() => {
-    const storedUserString = localStorage.getItem('user');
-    if (storedUserString) {
-      try {
-        const parsedUser: StoredUser = JSON.parse(storedUserString);
-        setCurrentUser(parsedUser);
-      } catch (error) {
-        console.error("Failed to parse user from localStorage:", error);
+    if (!isAuthLoading) { // Only run when auth status is determined
+      if (!isAuthContextAuthenticated) {
+        router.push('/login?message=login_required');
+      } else if (authUser?.role !== 'advertiser') {
+        // Redirect to their own dashboard or a generic page if not an advertiser
+        toast({ variant: "destructive", title: "Access Denied", description: "You do not have permission to view this page." });
+        if (authUser?.role === 'publisher') {
+            router.push('/publisher/dashboard');
+        } else {
+            router.push('/'); // Or some other default page
+        }
+      } else {
+        // User is authenticated and is an advertiser, set currentUser from auth context
+        setCurrentUser(authUser);
       }
     }
-  }, []);
+  }, [isAuthLoading, isAuthContextAuthenticated, authUser, router, toast]);
 
-  const isAuthenticated = !!currentUser;
 
   useEffect(() => {
     const fetchAds = async () => {
-      if (!currentUser || !currentUser.id) {
+      if (!currentUser || currentUser.role !== 'advertiser' || !API_BASE_URL) {
         setAds([]);
         setLoadingAds(false);
         return;
@@ -118,7 +131,7 @@ const AdvertiserDashboardPage: React.FC = () => {
       setErrorAds(null);
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get(`https://abakwa.squaregroup.tech/api/ads`, {
+        const response = await axios.get(`${API_BASE_URL}/ads`, {
           params: { advertiserId: currentUser.id },
           headers: { 'Authorization': `Bearer ${token}` },
         });
@@ -137,18 +150,14 @@ const AdvertiserDashboardPage: React.FC = () => {
       }
     };
 
-    if (isAuthenticated && currentUser?.role === 'advertiser') {
+    if (currentUser?.role === 'advertiser') {
       fetchAds();
-    } else {
-      setAds([]);
-      setLoadingAds(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, currentUser]);
+  }, [currentUser, toast]);
 
   useEffect(() => {
     const fetchAdRequests = async () => {
-      if (!currentUser || !currentUser.id || currentUser.role !== 'advertiser') {
+      if (!currentUser || currentUser.role !== 'advertiser' || !API_BASE_URL) {
         setAdRequests([]);
         setLoadingAdRequests(false);
         return;
@@ -157,7 +166,7 @@ const AdvertiserDashboardPage: React.FC = () => {
       setErrorAdRequests(null);
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get(`https://abakwa.squaregroup.tech/api/requests`, {
+        const response = await axios.get(`${API_BASE_URL}/requests`, { 
            params: { advertiser_id: currentUser.id }, 
            headers: { 'Authorization': `Bearer ${token}` },
         });
@@ -177,23 +186,22 @@ const AdvertiserDashboardPage: React.FC = () => {
       }
     };
 
-    if (isAuthenticated && activeTab === 'ad-requests' && currentUser?.role === 'advertiser') {
+    if (currentUser?.role === 'advertiser' && activeTab === 'ad-requests') {
       fetchAdRequests();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, currentUser, activeTab]);
+  }, [currentUser, activeTab, toast]);
 
 
   const handleAdUpload = (formData: FormData) => {
     return new Promise<void>(async (resolve, reject) => {
-      if (!currentUser) {
-        toast({ variant: "destructive", title: "Upload Failed", description: "User not logged in."});
-        reject(new Error("User not logged in."));
+      if (!currentUser || !API_BASE_URL) {
+        toast({ variant: "destructive", title: "Upload Failed", description: "User not logged in or API URL not configured."});
+        reject(new Error("User not logged in or API URL not configured."));
         return;
       }
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.post('https://abakwa.squaregroup.tech/api/ads', formData, {
+        const response = await axios.post(`${API_BASE_URL}/ads`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
             'Authorization': `Bearer ${token}`,
@@ -217,15 +225,20 @@ const AdvertiserDashboardPage: React.FC = () => {
   const handleViewPerformance = (ad: Ad) => setActiveTab('performance');
 
   const handleApproveRequest = async (requestId: string) => {
+    if (!API_BASE_URL) {
+      toast({ variant: "destructive", title: "Operation Failed", description: "API URL not configured." });
+      return;
+    }
     setProcessingRequestId(requestId);
     try {
       const token = localStorage.getItem('token');
-      await axios.patch(`https://abakwa.squaregroup.tech/api/requests/${requestId}/approve`, {}, {
+      await axios.patch(`${API_BASE_URL}/requests/${requestId}/approve`, {}, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
-      setAdRequests(prev => prev.map(req => req.requestId === requestId ? { ...req, requestStatus: 'approved' } : req).filter(req => req.requestStatus === 'pending'));
+      setAdRequests(prev => prev.filter(req => req.requestId !== requestId)); 
       toast({ title: "Request Approved", description: `Request ID ${requestId} has been approved.` });
-    } catch (error: any) {
+    } catch (error: any)
+      {
       console.error('Error approving request:', error);
       const errMsg = axios.isAxiosError(error) && error.response?.data?.message ? error.response.data.message : "Failed to approve request.";
       toast({ variant: "destructive", title: "Approval Failed", description: errMsg });
@@ -235,13 +248,17 @@ const AdvertiserDashboardPage: React.FC = () => {
   };
 
   const handleRejectRequest = async (requestId: string) => {
+    if (!API_BASE_URL) {
+      toast({ variant: "destructive", title: "Operation Failed", description: "API URL not configured." });
+      return;
+    }
     setProcessingRequestId(requestId);
     try {
       const token = localStorage.getItem('token');
-      await axios.patch(`https://abakwa.squaregroup.tech/api/requests/${requestId}/reject`, {}, {
+      await axios.patch(`${API_BASE_URL}/requests/${requestId}/reject`, {}, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
-      setAdRequests(prev => prev.map(req => req.requestId === requestId ? { ...req, requestStatus: 'rejected' } : req).filter(req => req.requestStatus === 'pending'));
+      setAdRequests(prev => prev.filter(req => req.requestId !== requestId)); 
       toast({ title: "Request Rejected", description: `Request ID ${requestId} has been rejected.`, variant: "destructive" });
     } catch (error: any) {
       console.error('Error rejecting request:', error);
@@ -252,6 +269,16 @@ const AdvertiserDashboardPage: React.FC = () => {
     }
   };
 
+  if (isAuthLoading || !currentUser || currentUser.role !== 'advertiser') {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Header />
+        <main className="flex-grow flex items-center justify-center">
+          {isAuthLoading ? <Loader2 className="h-16 w-16 animate-spin text-primary" /> : null}
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -350,7 +377,7 @@ const AdvertiserDashboardPage: React.FC = () => {
                     <h2 className="text-2xl font-semibold leading-6 text-foreground">Upload New Ad</h2>
                     <p className="mt-2 max-w-xl text-sm text-muted-foreground">Create a new ad for publisher platforms.</p>
                 </div>
-                <Suspense fallback={<div>Loading form...</div>}>
+                <Suspense fallback={<Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />}>
                   <UploadAdForm onSubmit={handleAdUpload} />
                 </Suspense>
               </div>
@@ -361,8 +388,7 @@ const AdvertiserDashboardPage: React.FC = () => {
                 <div className="pb-5 sm:flex sm:items-center sm:justify-between">
                   <h3 className="text-lg leading-6 font-medium text-foreground">My Ads</h3>
                 </div>
-                {loadingAds && !currentUser ? <div className="text-center py-10"><p>Please log in to see your ads.</p></div> :
-                 loadingAds ? <div className="text-center py-10"><Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" /></div> :
+                {loadingAds ? <div className="text-center py-10"><Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" /></div> :
                  errorAds ? <div className="text-center py-10"><p className="text-destructive">{errorAds}</p></div> :
                  ads.length === 0 ? <div className="text-center py-10"><p>No ads uploaded yet.</p></div> :
                 (
@@ -450,5 +476,3 @@ const AdvertiserDashboardPage: React.FC = () => {
 };
 
 export default AdvertiserDashboardPage;
-
-      

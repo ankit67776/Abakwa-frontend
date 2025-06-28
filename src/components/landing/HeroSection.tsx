@@ -2,74 +2,52 @@
 "use client";
 
 import React from 'react';
-import Link from 'next/link'; // Changed from react-router-dom
+import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
-import { Button } from '@/components/ui/button'; // Using ShadCN Button
-import Image from 'next/image'; // Using next/image
+import { Button } from '@/components/ui/button';
+import Image from 'next/image';
 
 const HeroSection: React.FC = () => {
   return (
-    <div className="relative bg-gradient-to-r from-blue-600 to-blue-800 overflow-hidden pt-16"> {/* Added pt-16 for header */}
-      <div className="max-w-7xl mx-auto">
-        <div className="relative z-10 pb-8 bg-gradient-to-r from-blue-600 to-blue-800 sm:pb-16 md:pb-20 lg:max-w-2xl lg:w-full lg:pb-28 xl:pb-32">
-          <svg
-            className="hidden lg:block absolute right-0 inset-y-0 h-full w-48 text-blue-800 transform translate-x-1/2"
-            fill="currentColor"
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
-            aria-hidden="true"
-          >
-            <polygon points="50,0 100,0 50,100 0,100" />
-          </svg>
-
-          <div className="relative pt-10 px-4 sm:px-6 lg:px-8 sm:pt-12 lg:pt-24">
-            <div className="text-center lg:text-left">
-              <h1 className="text-4xl tracking-tight font-extrabold text-white sm:text-5xl md:text-6xl">
-                <span className="block">The Simplest Way to</span>
-                <span className="block text-blue-200">Exchange Ad Units</span>
-              </h1>
-              <p className="mt-3 text-base text-blue-100 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
-                Abakwa connects advertisers with publishers seamlessly. Upload, select, and track ad performance all in one place.
-              </p>
-              <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
-                <div className="rounded-md shadow">
-                  <Link href="/signup?role=advertiser" passHref>
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="w-full border-white text-blue-600 bg-white hover:bg-gray-100 hover:text-blue-700" // Adjusted for better contrast
-                    >
-                      I&apos;m an Advertiser <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </Link>
-                </div>
-                <div className="mt-3 sm:mt-0 sm:ml-3">
-                  <Link href="/signup?role=publisher" passHref>
-                    <Button
-                      variant="outline"
-                      size="lg"
-                       className="w-full border-white text-blue-600 bg-white hover:bg-gray-100 hover:text-blue-700" // Adjusted for better contrast
-                    >
-                      I&apos;m a Publisher <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </Link>
-                </div>
-              </div>
+    <div className="relative isolate overflow-hidden bg-gradient-to-b from-primary/10 via-background to-background pt-14">
+      <div
+        className="absolute inset-y-0 right-1/2 -z-10 -mr-96 w-[200%] origin-top-right skew-x-[-30deg] bg-card shadow-xl shadow-primary/10 ring-1 ring-primary/5 sm:-mr-80 lg:-mr-96"
+        aria-hidden="true"
+      />
+      <div className="mx-auto max-w-7xl px-6 py-32 sm:py-40 lg:px-8">
+        <div className="mx-auto max-w-2xl lg:mx-0 lg:grid lg:max-w-none lg:grid-cols-2 lg:gap-x-16 lg:gap-y-6 xl:grid-cols-1 xl:grid-rows-1 xl:gap-x-8">
+          <h1 className="max-w-2xl text-4xl font-bold tracking-tight text-foreground sm:text-6xl lg:col-span-2 xl:col-auto">
+            The Advertising Exchange, <br /> Reimagined.
+          </h1>
+          <div className="mt-6 max-w-xl lg:mt-0 xl:col-end-1 xl:row-start-1">
+            <p className="text-lg leading-8 text-muted-foreground">
+              Abakwa is the frictionless marketplace connecting innovative advertisers with premium publishers. Automate your ad exchange, unlock new revenue streams, and track every impression in real-time.
+            </p>
+            <div className="mt-10 flex items-center gap-x-6">
+              <Link href="/signup" passHref>
+                <Button size="lg">
+                  Get Started <ArrowRight className="ml-2" />
+                </Button>
+              </Link>
+              <Link href="#how-it-works" passHref>
+                <Button variant="link" size="lg" className="group text-base">
+                  See it in action <span aria-hidden="true" className="transition-transform group-hover:translate-x-1 ml-1">&rarr;</span>
+                </Button>
+              </Link>
             </div>
           </div>
+          <Image
+            src="/hero.png"
+            alt="App screenshot of a dashboard"
+            className="mt-10 aspect-[6/5] w-full max-w-lg rounded-2xl object-cover sm:mt-16 lg:mt-0 lg:max-w-none xl:row-span-2 xl:row-end-2 xl:mt-36"
+            width={1200}
+            height={800}
+            priority
+            data-ai-hint="dashboard analytics"
+          />
         </div>
       </div>
-      <div className="lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2">
-        <Image
-          className="h-56 w-full object-cover sm:h-72 md:h-96 lg:w-full lg:h-full"
-          src="https://images.pexels.com/photos/3183150/pexels-photo-3183150.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260"
-          alt="Team working on digital advertising"
-          width={1260}
-          height={750}
-          priority
-          data-ai-hint="team collaboration"
-        />
-      </div>
+      <div className="absolute inset-x-0 bottom-0 -z-10 h-24 bg-gradient-to-t from-background sm:h-32" />
     </div>
   );
 };

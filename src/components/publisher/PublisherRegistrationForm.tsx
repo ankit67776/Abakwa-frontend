@@ -2,14 +2,16 @@
 "use client";
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { AlertCircle, Building, User, Mail, Globe, Home, Briefcase, Network, Info, CheckCircle, ExternalLink } from 'lucide-react';
-import { cn } from '@/lib/utils'; // Added cn import for consistency if FormField needs it, though not strictly used by it now
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { AlertCircle, Building, User, Globe, Home, Briefcase, CheckCircle, Loader2 } from 'lucide-react';
+import axios from 'axios';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 interface PublisherFormData {
   companyName: string;
@@ -17,12 +19,8 @@ interface PublisherFormData {
   contactTitle: string;
   website: string;
   address: string;
-  gamContactName: string;
-  gamEmail: string;
-  gamNetworkId: string;
 }
 
-// Define FormField outside the PublisherRegistrationForm component
 interface FormFieldProps {
   label: string;
   id: string;
@@ -43,16 +41,16 @@ const FormField: React.FC<FormFieldProps> = ({label, id, icon, children, descrip
 );
 
 const PublisherRegistrationForm: React.FC = () => {
+  const router = useRouter();
   const [formData, setFormData] = useState<PublisherFormData>({
     companyName: '',
     contactName: '',
     contactTitle: '',
     website: '',
     address: '',
-    gamContactName: '',
-    gamEmail: '',
-    gamNetworkId: '',
   });
+  
+  const [gaPropertyId, setGaPropertyId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -64,23 +62,43 @@ const PublisherRegistrationForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!gaPropertyId) {
+        setSubmitError("Google Analytics Property ID is required.");
+        return;
+    }
+    if (!API_BASE_URL) {
+      setSubmitError("API URL not configured. Please contact support.");
+      return;
+    }
+    
     setIsLoading(true);
     setSubmitMessage(null);
     setSubmitError(null);
 
-    console.log('Publisher Registration Data:', formData);
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    const finalFormData = {
+      ...formData,
+      ga_property_id: gaPropertyId,
+    };
 
-    const isSuccess = Math.random() > 0.2; 
+    try {
+        const token = localStorage.getItem('token');
+        // The single backend endpoint that handles verification and registration
+        await axios.post(`${API_BASE_URL}/publisher/complete-registration`, finalFormData, {
+           headers: { 'Authorization': `Bearer ${token}` }
+        });
 
-    if (isSuccess) {
-      setSubmitMessage('Registration data submitted successfully! We will review your application and get back to you soon.');
-      // Optionally reset form:
-      // setFormData({ companyName: '', contactName: '', contactTitle: '', website: '', address: '', gamContactName: '', gamEmail: '', gamNetworkId: '' });
-    } else {
-      setSubmitError('There was an issue submitting your registration. Please try again later.');
+        setSubmitMessage('Registration complete! We have received and verified your information. Redirecting to your dashboard...');
+        
+        setTimeout(() => {
+          router.push('/publisher/dashboard'); 
+        }, 3000);
+    } catch(error: any) {
+        // Backend should return a clear error, e.g., for GA verification failure
+        const errMsg = error.response?.data?.message || 'An unexpected error occurred. Please try again.';
+        setSubmitError(errMsg);
+    } finally {
+        setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
@@ -89,19 +107,13 @@ const PublisherRegistrationForm: React.FC = () => {
         <CardHeader className="p-6 sm:p-8 border-b">
           <CardTitle className="text-2xl font-semibold text-foreground flex items-center">
             <Building className="mr-3 h-6 w-6 text-primary" />
-            Publisher & GAM Information
+            Publisher Information
           </CardTitle>
-          <CardDescription className="text-muted-foreground pl-10"> {/* Aligned with title text */}
-            Please provide your company, contact, and Google Ad Manager details.
+          <CardDescription className="text-muted-foreground pl-10">
+            Please provide your company and contact details.
           </CardDescription>
         </CardHeader>
         <CardContent className="p-6 sm:p-8 space-y-8">
-          {/* Publisher Details Section */}
-          <div>
-            <h3 className="text-lg font-medium text-primary mb-4 flex items-center">
-              <User className="mr-2 h-5 w-5" />
-              Company & Contact Information
-            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField label="Company Name" id="companyName" icon={<Building />}>
                 <Input
@@ -156,52 +168,6 @@ const PublisherRegistrationForm: React.FC = () => {
                 />
               </FormField>
             </div>
-          </div>
-
-          <Separator className="my-8" />
-
-          {/* GAM Details Section */}
-          <div>
-            <h3 className="text-lg font-medium text-primary mb-4 flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 h-5 w-5"><path d="M12 12h.01"/><path d="M16.24 7.76A7.72 7.72 0 0 0 12 4a7.72 7.72 0 0 0-4.24 3.76"/><path d="M16.24 7.76C18.1 9.62 19.25 12.25 19.25 15A7.72 7.72 0 0 1 12 19a7.72 7.72 0 0 1-7.25-4"/><path d="M12 19c2.49 0 4.68-1.31 6-3.24"/><path d="M4.75 15c0-2.75 1.15-5.38 3.01-7.24"/></svg>
-              Google Ad Manager (GAM)
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField label="GAM Technical Contact Name" id="gamContactName" icon={<User />}>
-                <Input
-                  id="gamContactName"
-                  name="gamContactName"
-                  value={formData.gamContactName}
-                  onChange={handleChange}
-                  placeholder="Brandon Ross"
-                  required
-                />
-              </FormField>
-              <FormField label="GAM Technical Contact Email" id="gamEmail" icon={<Mail />}>
-                <Input
-                  id="gamEmail"
-                  name="gamEmail"
-                  type="email"
-                  value={formData.gamEmail}
-                  onChange={handleChange}
-                  placeholder="jadeandzelda@gmail.com"
-                  required
-                />
-              </FormField>
-            </div>
-            <div className="mt-6">
-              <FormField label="GAM Network ID" id="gamNetworkId" icon={<Network />} description="Find this in your GAM account under Admin > Global settings > Network settings.">
-                <Input
-                  id="gamNetworkId"
-                  name="gamNetworkId"
-                  value={formData.gamNetworkId}
-                  onChange={handleChange}
-                  placeholder="22339582871"
-                  required
-                />
-              </FormField>
-            </div>
-          </div>
         </CardContent>
       </Card>
 
@@ -209,27 +175,23 @@ const PublisherRegistrationForm: React.FC = () => {
         <CardHeader className="p-6 sm:p-8">
           <CardTitle className="text-xl font-semibold text-primary flex items-center">
              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-3 h-6 w-6"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" x2="2" y1="8" y2="22"/><line x1="17.5" x2="9" y1="15" y2="15"/></svg>
-            Google Analytics (GA) Access
+            Google Analytics Integration (Required)
           </CardTitle>
+           <CardDescription>
+             Before submitting, ensure you have granted "Viewer" access for your property to <strong className="text-foreground">gatabakwastudio@gmail.com</strong> in your Google Analytics settings.
+           </CardDescription>
         </CardHeader>
-        <CardContent className="p-6 sm:p-8 pt-0 text-sm">
-          <div className="flex items-start space-x-3 p-4 bg-background border border-border rounded-lg">
-            <Info className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
-            <div>
-              <h4 className="font-medium text-foreground">Action Required: Grant Viewer Access</h4>
-              <p className="mt-1 text-muted-foreground">
-                To complete your integration and enable performance tracking, please grant "Viewer" access
-                to your Google Analytics property for the email address:
-              </p>
-              <p className="mt-2 text-base font-medium bg-primary/10 text-primary px-3 py-1.5 rounded-md inline-block">
-                gatabakwastudio@gmail.com
-              </p>
-              <p className="text-xs mt-2 text-muted-foreground/80">
-                This allows us to securely fetch performance data. All data is handled according to our privacy policy.
-                Need help? <a href="#" className="text-primary hover:underline">View instructions <ExternalLink className="inline-block h-3 w-3 ml-0.5" /></a>.
-              </p>
-            </div>
-          </div>
+        <CardContent className="p-6 sm:p-8 pt-0 space-y-4">
+          <FormField label="Google Analytics Property ID" id="ga-property-id" description="Starts with 'G-' for GA4. Found in your GA admin settings.">
+            <Input
+              id="ga-property-id"
+              name="ga_property_id"
+              value={gaPropertyId}
+              onChange={(e) => setGaPropertyId(e.target.value)}
+              placeholder="e.g., G-XXXXXXXXXX"
+              required
+            />
+          </FormField>
         </CardContent>
       </Card>
       
@@ -247,17 +209,19 @@ const PublisherRegistrationForm: React.FC = () => {
           </div>
         )}
         <div className="flex justify-end">
-          <Button type="submit" size="lg" disabled={isLoading} className="min-w-[200px] text-base">
+          <Button type="submit" size="lg" disabled={isLoading || !!submitMessage} className="min-w-[200px] text-base">
             {isLoading ? (
               <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-primary-foreground" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Submitting Registration...
+                <Loader2 className="animate-spin -ml-1 mr-3 h-5 w-5" />
+                Verifying & Submitting...
+              </>
+            ) : submitMessage ? (
+              <>
+                <CheckCircle className="mr-2 h-5 w-5" />
+                Submitted!
               </>
             ) : (
-              'Complete Registration'
+              'Verify & Complete Registration'
             )}
           </Button>
         </div>
@@ -267,5 +231,3 @@ const PublisherRegistrationForm: React.FC = () => {
 };
 
 export default PublisherRegistrationForm;
-
-    

@@ -49,7 +49,7 @@ const SignupForm: React.FC = () => {
     setIsLoading(true);
     
     try {
-      const response = await axios.post('https://abakwa.squaregroup.tech/register', {
+      const response = await axios.post('http://localhost:3000/register', {
         email,
         password,
         password_confirmation: confirmPassword, // Added password_confirmation
@@ -63,6 +63,9 @@ const SignupForm: React.FC = () => {
       // This is a common pattern if the backend doesn't auto-login after signup.
       
       if (role === 'publisher') {
+        const { token, user } = response.data;
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
         // For publishers, redirect to the more detailed registration form first
         // Potentially pass some initial data or a flag if needed
         router.push('/publisher-registration');

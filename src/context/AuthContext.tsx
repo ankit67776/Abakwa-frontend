@@ -4,7 +4,7 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
-import { jwtDecode } from 'jwt-decode'; // Corrected import
+import { jwtDecode } from 'jwt-decode'; 
 
 interface User {
   id: string;
@@ -24,11 +24,13 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ user: User, token: string } | void>;
-  signup: (email: string, password: string, name: string, role: 'advertiser' | 'publisher') => Promise<{ user: User, token: string } | void>;
+  signup: (email: string, password: string, passwordConfirmation: string, name: string, role: 'advertiser' | 'publisher') => Promise<{ user: User, token: string } | void>;
   handleGoogleLogin: (credentialResponse: any, role?: 'advertiser' | 'publisher') => Promise<{ user: User, token: string } | void>;
   logout: () => void;
   checkAuthStatus: () => void;
 }
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -50,7 +52,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setToken(storedToken);
           setUser(JSON.parse(storedUser));
         } else {
-          // Token expired
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           setUser(null);
@@ -76,9 +77,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const login = async (email: string, password: string) => {
+    if (!API_BASE_URL) throw new Error("API URL not configured.");
     setIsLoading(true);
     try {
-      const res = await axios.post('http://localhost:3000/api/auth/login', { email, password });
+      const res = await axios.post(`${API_BASE_URL}/sessions`, { email, password });
       const { token: apiToken, user: apiUser } = res.data;
 
       localStorage.setItem('token', apiToken);
@@ -94,19 +96,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const signup = async (email: string, password: string, name: string, role: 'advertiser' | 'publisher') => {
+  const signup = async (email: string, password: string, passwordConfirmation: string, name: string, role: 'advertiser' | 'publisher') => {
+    if (!API_BASE_URL) throw new Error("API URL not configured.");
     setIsLoading(true);
     try {
-      // This should call your backend API for signup
-      const res = await axios.post('http://localhost:3000/api/auth/signup', { email, password, name, role });
+      const res = await axios.post(`${API_BASE_URL}/auth/signup`, { 
+        email, 
+        password, 
+        password_confirmation: passwordConfirmation, 
+        name, 
+        role 
+      });
       const { token: apiToken, user: apiUser } = res.data;
       
-      localStorage.setItem('token', apiToken);
-      localStorage.setItem('user', JSON.stringify(apiUser));
-      setToken(apiToken);
-      setUser(apiUser);
+      if (apiToken && apiUser) {
+        localStorage.setItem('token', apiToken);
+        localStorage.setItem('user', JSON.stringify(apiUser));
+        setToken(apiToken);
+        setUser(apiUser);
+      }
       setIsLoading(false);
-      return { user: apiUser, token: apiToken };
+      return { user: apiUser, token: apiToken }; 
     } catch (error) {
       console.error('Signup failed:', error);
       setIsLoading(false);
@@ -115,6 +125,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const handleGoogleLogin = async (credentialResponse: any, roleParam?: 'advertiser' | 'publisher') => {
+    if (!API_BASE_URL) throw new Error("API URL not configured.");
     setIsLoading(true);
     try {
       const idToken = credentialResponse.credential;
@@ -123,7 +134,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         requestBody.role = roleParam;
       }
 
-      const res = await axios.post('http://localhost:3000/api/auth/google', requestBody);
+      const res = await axios.post(`${API_BASE_URL}/auth/google`, requestBody);
       const { token: apiToken, user: apiUser } = res.data;
 
       localStorage.setItem('token', apiToken);
@@ -144,7 +155,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setToken(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    router.push('/login'); // Redirect to login on logout
+    router.push('/login'); 
   };
 
   return (

@@ -1,74 +1,114 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Header from '@/components/layout/Header';
 import SelectedAdList from '@/components/publisher/SelectedAdList';
-import PerformanceChart from '@/components/advertiser/PerformanceChart';
-import { Ad } from '@/types/ad';
+import type { Ad } from '@/types/ad';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, ListChecks, BarChartHorizontal, Eye, DollarSign, Loader2, Copy, CheckCircle } from 'lucide-react';
+import { LayoutDashboard, ListChecks, BarChart3, Eye, DollarSign, Loader2, Copy, CheckCircle, Users, LineChart as LineChartIcon, Map as MapIcon, GanttChart, View, ListTree, TrendingUp, PieChart, AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from "@/hooks/use-toast";
 import axios from 'axios';
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
+
+// Analytics Components
+import ReportHeader from '@/components/publisher/analytics/ReportHeader';
+import StatCard from '@/components/publisher/analytics/StatCard';
+import UsersOverTimeChart from '@/components/publisher/analytics/UsersOverTimeChart';
+import UsersByChannelChart from '@/components/publisher/analytics/UsersByChannelChart';
+import SessionsByChannelTable from '@/components/publisher/analytics/SessionsByChannelTable';
+import UsersByCountryCard from '@/components/publisher/analytics/UsersByCountryCard';
+import UserActivitySmallLineChart from '@/components/publisher/analytics/UserActivitySmallLineChart';
+import UserActivityByCohortChart from '@/components/publisher/analytics/UserActivityByCohortChart';
+import ViewsByPageTable from '@/components/publisher/analytics/ViewsByPageTable';
+import EventCountTable from '@/components/publisher/analytics/EventCountTable';
+import LtvByChannelChart from '@/components/publisher/analytics/LtvByChannelChart';
+import AnalyticsPlaceholderCard from '@/components/publisher/analytics/AnalyticsPlaceholderCard';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 interface StoredUser {
   id: string;
   name: string;
   email: string;
   role: 'advertiser' | 'publisher';
+  ga_property_id?: string;
 }
+
+// Interface for the analytics data fetched from the backend
+interface AnalyticsData {
+  stats: {
+    activeUsers: string;
+    newUsers: string;
+    averageEngagementTime: string;
+    activeUsersLast30Mins?: string; 
+  };
+  usersOverTime: { date: string; users: number }[];
+  usersByChannel?: { channel: string; users: number; fill: string }[];
+  sessionsByChannel?: { headers: string[]; rows: (string | number)[][]; columnAlignments?: ('left' | 'right' | 'center')[] };
+  usersByCountry?: { name: string; users: number; code: string }[];
+  userActivity?: { period: string; users: number, fill: string }[];
+  userActivityByCohort?: { cohortData: { week: string; values: (number | null)[] }[] };
+  viewsByPage?: { headers: string[]; rows: (string | number)[][]; columnAlignments?: ('left' | 'right' | 'center')[] };
+  eventCountByName?: { headers: string[]; rows: (string | number)[][]; columnAlignments?: ('left' | 'right' | 'center')[] };
+  ltvByChannel?: { channel: string; value: number; fill: string }[];
+}
+
 
 const transformBackendAdRequestToFrontendAd = (backendAdRequest: any, currentUserId: string): Ad => {
   return {
-    id: String(backendAdRequest.id), // This is the Ad's ID
+    id: String(backendAdRequest.id), 
     name: backendAdRequest.title || 'Untitled Ad',
     description: backendAdRequest.description || 'No description available.',
-    status: backendAdRequest.status as Ad['status'] || 'unknown', // Ad's own general status (e.g. active/paused by advertiser)
+    status: backendAdRequest.status as Ad['status'] || 'unknown', 
     format: backendAdRequest.ad_format as Ad['format'] || 'unknown',
     imageUrl: backendAdRequest.media_url || undefined,
-    aiHint: backendAdRequest.ai_hint || 'advertisement', // Assuming backend might send this
+    aiHint: backendAdRequest.ai_hint || 'advertisement', 
     size: backendAdRequest.ad_size || 'N/A',
     
     startDate: backendAdRequest.start_date || undefined,
     endDate: backendAdRequest.end_date || undefined,
-    impressions: parseInt(String(backendAdRequest.impressions), 10) || 0, // Default if not provided
-    clicks: parseInt(String(backendAdRequest.clicks), 10) || 0, // Default if not provided
-    ctr: backendAdRequest.ctr || '0.00%', // Default if not provided
-    createdAt: backendAdRequest.created_at || new Date().toISOString(), // Ad's creation date
+    impressions: parseInt(String(backendAdRequest.impressions), 10) || 0,
+    clicks: parseInt(String(backendAdRequest.clicks), 10) || 0, 
+    ctr: backendAdRequest.ctr || '0.00%', 
+    createdAt: backendAdRequest.created_at || new Date().toISOString(),
 
     advertiser: {
       name: backendAdRequest.advertiser?.name || 'Unknown Advertiser',
       id: backendAdRequest.advertiser?.id ? String(backendAdRequest.advertiser.id) : undefined,
     },
     
-    request_id: String(backendAdRequest.request_id), // ID of the ad_request record
+    request_id: String(backendAdRequest.request_id), 
     request_status: backendAdRequest.request_status?.toLowerCase() as Ad['request_status'] || 'pending',
-    publisher_id: currentUserId, // The ID of the publisher viewing this dashboard
+    publisher_id: currentUserId, 
 
-    // Ad specific details, now available in the updated API response
     header_code: backendAdRequest.header_code || undefined,
     ad_txt_content: backendAdRequest.ad_txt_content || undefined,
     bid_strategy: backendAdRequest.bid_strategy || undefined,
     budget: backendAdRequest.budget || undefined,
     custom_width: backendAdRequest.custom_width || undefined,
     custom_height: backendAdRequest.custom_height || undefined,
-    fallback_image: typeof backendAdRequest.fallback_image === 'boolean' ? backendAdRequest.fallback_image : undefined,
-    header_bidding: typeof backendAdRequest.header_bidding === 'boolean' ? backendAdRequest.header_bidding : undefined,
+    fallback_image: typeof backendAdRequest.fallback_image === 'boolean' ? backendAdRequest.fallback_image : (String(backendAdRequest.fallback_image).toLowerCase() === 'true'),
+    header_bidding: typeof backendAdRequest.header_bidding === 'boolean' ? backendAdRequest.header_bidding : (String(backendAdRequest.header_bidding).toLowerCase() === 'true'),
     header_bidding_partners: backendAdRequest.header_bidding_partners || undefined,
     target_audience: backendAdRequest.target_audience || undefined,
     target_devices: backendAdRequest.target_devices || undefined,
     target_locations: backendAdRequest.target_locations || undefined,
-    user_id: backendAdRequest.user_id ? String(backendAdRequest.user_id) : undefined, // Ad's original advertiser user_id
+    user_id: backendAdRequest.user_id ? String(backendAdRequest.user_id) : undefined, 
+    title: backendAdRequest.title
   };
 };
 
-
 export default function PublisherDashboardPage() {
   const { toast } = useToast();
+  const { user: authUser, isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const router = useRouter();
+
   const [currentUser, setCurrentUser] = useState<StoredUser | null>(null);
   const [activeTab, setActiveTab] = useState<string>('my-ads');
   const [myAdUnits, setMyAdUnits] = useState<Ad[]>([]);
@@ -79,44 +119,92 @@ export default function PublisherDashboardPage() {
   const [currentAdCode, setCurrentAdCode] = useState<string | null>(null);
   const [codeCopied, setCodeCopied] = useState(false);
 
+  // State for analytics data
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
+  const [loadingAnalytics, setLoadingAnalytics] = useState<boolean>(false);
+  const [errorAnalytics, setErrorAnalytics] = useState<string | null>(null);
+
+
   useEffect(() => {
-    const storedUserString = localStorage.getItem('user');
-    if (storedUserString) {
-      try {
-        const parsedUser: StoredUser = JSON.parse(storedUserString);
-        setCurrentUser(parsedUser);
-        if (parsedUser.role !== 'publisher') {
-            toast({ variant: "destructive", title: "Access Denied", description: "You must be a publisher to view this page."});
+    if (!isAuthLoading) {
+      if (!isAuthenticated) {
+        router.push('/login?message=login_required');
+      } else if (authUser?.role !== 'publisher') {
+        toast({ variant: "destructive", title: "Access Denied", description: "You do not have permission to view this page." });
+        if (authUser?.role === 'advertiser') {
+            router.push('/advertiser/dashboard');
+        } else {
+            router.push('/'); 
         }
-      } catch (error) {
-        console.error("Failed to parse user from localStorage:", error);
-        toast({ variant: "destructive", title: "Authentication Error", description: "Could not load user data."});
+      } else {
+        setCurrentUser(authUser);
       }
-    } else {
-        console.warn("No user found in localStorage. Publisher dashboard may not function correctly.");
-        toast({ variant: "destructive", title: "Not Logged In", description: "Please log in to view the publisher dashboard."});
+    }
+  }, [isAuthLoading, isAuthenticated, authUser, router, toast]);
+
+  const fetchAnalyticsData = useCallback(async () => {
+    if (!API_BASE_URL) {
+      setErrorAnalytics("API URL not configured. Cannot fetch analytics.");
+      toast({ variant: "destructive", title: "Configuration Error", description: "API URL is missing." });
+      return;
+    }
+    setLoadingAnalytics(true);
+    setErrorAnalytics(null);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_BASE_URL}/publisher/analytics-snapshot`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      const data = response.data;
+      
+      // Process date format for usersOverTime chart
+      if (data.usersOverTime) {
+        data.usersOverTime.sort((a: {date: string}, b: {date: string}) => a.date.localeCompare(b.date));
+        data.usersOverTime = data.usersOverTime.map((item: {date: string, users: number}) => ({
+          ...item,
+          date: new Date(
+            parseInt(item.date.substring(0, 4)),
+            parseInt(item.date.substring(4, 6)) - 1,
+            parseInt(item.date.substring(6, 8))
+          ).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        }));
+      }
+
+      setAnalyticsData(data);
+    } catch (error: any) {
+      console.error('Error fetching analytics data:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to load analytics data. Please try again.';
+      setErrorAnalytics(errorMessage);
+      toast({ variant: "destructive", title: "Analytics Error", description: errorMessage });
+    } finally {
+      setLoadingAnalytics(false);
     }
   }, [toast]);
 
-  const isAuthenticatedPublisher = !!currentUser && currentUser.role === 'publisher';
+  useEffect(() => {
+    if (activeTab === 'performance' && !analyticsData) {
+      fetchAnalyticsData();
+    }
+  }, [activeTab, analyticsData, fetchAnalyticsData]);
+
 
   useEffect(() => {
     const fetchMyAdUnits = async () => {
-      if (!currentUser || !currentUser.id) {
+      if (!currentUser || !currentUser.id || !API_BASE_URL) {
         setMyAdUnits([]);
         setLoadingAdUnits(false);
+        if (!API_BASE_URL && currentUser) toast({ variant: "destructive", title: "Configuration Error", description: "API URL is missing." });
         return;
       }
       setLoadingAdUnits(true);
       setErrorAdUnits(null);
       try {
         const token = localStorage.getItem('token');
-        // The backend should infer publisher_id from the token
-        const response = await axios.get(`https://abakwa.squaregroup.tech/api/requests`, { 
+        const response = await axios.get(`${API_BASE_URL}/ad_requests`, { 
           headers: {
             'Authorization': `Bearer ${token}`,
           },
-          // If backend explicitly requires publisher_id in params:
           params: { publisher_id: currentUser.id } 
         });
         
@@ -129,9 +217,9 @@ export default function PublisherDashboardPage() {
       } catch (error: any) {
         console.error('Error fetching publisher ad units:', error);
         let errorMessage = 'Failed to load your ad units. Please try again.';
-         if (error.response?.status === 401) {
+         if (axios.isAxiosError(error) && error.response?.status === 401) {
              errorMessage = 'Authentication failed. Please log in again.';
-        } else if (error.response?.data?.message) {
+        } else if (axios.isAxiosError(error) && error.response?.data?.message) {
             errorMessage = error.response.data.message;
         }
         setErrorAdUnits(errorMessage);
@@ -145,60 +233,25 @@ export default function PublisherDashboardPage() {
       }
     };
 
-    if (isAuthenticatedPublisher) {
+    if (currentUser?.role === 'publisher') {
       fetchMyAdUnits();
-    } else if (!currentUser && typeof window !== 'undefined') {
-        setMyAdUnits([]);
-        setLoadingAdUnits(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticatedPublisher, currentUser, toast]); // currentUser is needed here if its properties are used in fetch.
-  
+  }, [currentUser, toast]); 
   
   const handleRemoveAdUnit = async (adUnit: Ad) => {
     alert(`Mock action: Attempting to remove/cancel ad unit: ${adUnit.name} (Request ID: ${adUnit.request_id}, Status: ${adUnit.request_status}). Backend integration needed.`);
-    // Example backend integration (to be implemented on your backend):
-    // try {
-    //   const token = localStorage.getItem('token');
-    //   if (!adUnit.request_id) {
-    //     toast({ variant: "destructive", title: "Error", description: "Request ID is missing."});
-    //     return;
-    //   }
-    //   // If 'pending', endpoint might be DELETE /api/ad_requests/{adUnit.request_id}
-    //   // If 'approved' or 'active_on_site', endpoint might be POST /api/ad_requests/{adUnit.request_id}/deactivate
-    //   // For this example, let's assume a generic DELETE endpoint for cancelling/removing.
-    //   await axios.delete(`http://localhost:3000/api/ad_requests/${adUnit.request_id}`, { 
-    //       headers: { 'Authorization': `Bearer ${token}` }
-    //   });
-    //   toast({ title: "Ad Unit Updated", description: `${adUnit.name} has been updated.` });
-    //   setMyAdUnits((prev) => prev.filter((unit) => unit.request_id !== adUnit.request_id)); // Optimistic update
-    //   // fetchMyAdUnits(); // Or re-fetch
-    // } catch (error: any) {
-    //   console.error("Error during ad unit removal/cancellation:", error);
-    //   toast({ variant: "destructive", title: "Error", description: `Could not update ${adUnit.name}. ${error.response?.data?.message || error.message}`});
-    // }
   };
   
   const handleGetAdCode = (ad: Ad) => {
     const embedCode = ad.header_code || 
-    `<!-- Ad: ${ad.name} - Code not available or ad not approved. -->
-<!-- Placeholder Abakwa Ad Unit -->
-<div id="abakwa-ad-${ad.id}" style="width: ${ad.size?.split('x')[0] || '300'}px; height: ${ad.size?.split('x')[1] || '250'}px; border:1px solid #ccc; display:flex; align-items:center; justify-content:center; background-color:#f0f0f0;">
-  <p style="font-family:sans-serif; color:#555; font-size:12px;">Abakwa Ad: ${ad.name} (${ad.size || 'N/A'})</p>
-</div>
-<!-- Note: A real ad script would typically be provided by the backend for approved ads. -->`;
-    
+    `<!-- Ad: ${ad.name} (${ad.format || 'N/A'}, ${ad.size || 'N/A'}) -->...`;
     setCurrentAdCode(embedCode);
     setIsCodeModalOpen(true);
     setCodeCopied(false);
   };
 
   const handlePreviewAd = (ad: Ad) => {
-    let previewContent = `Previewing: ${ad.name}\nFormat: ${ad.format}\nSize: ${ad.size}\nRequest Status: ${ad.request_status}`;
-    if (ad.imageUrl) {
-        previewContent += `\nImage: ${ad.imageUrl}`;
-    }
-    alert(previewContent);
+    alert(`Previewing: ${ad.name}`);
   };
 
   const copyToClipboard = () => {
@@ -208,7 +261,7 @@ export default function PublisherDashboardPage() {
         toast({ title: "Code Copied!", description: "Ad embed code copied to clipboard." });
         setTimeout(() => setCodeCopied(false), 2000); 
       }, (err) => {
-        console.error('Failed to copy: ', err);
+        console.error('Failed to copy code: ', err);
         toast({ variant: "destructive", title: "Copy Failed", description: "Could not copy code to clipboard." });
       });
     }
@@ -216,11 +269,22 @@ export default function PublisherDashboardPage() {
 
   const approvedAdUnits = myAdUnits.filter(unit => unit.request_status === 'approved' || unit.request_status === 'active_on_site');
 
+  if (isAuthLoading || !currentUser || currentUser.role !== 'publisher') {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Header />
+        <main className="flex-grow flex items-center justify-center">
+          {isAuthLoading ? <Loader2 className="h-16 w-16 animate-spin text-primary" /> : null}
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header />
       <main className="flex-grow pt-16"> 
-        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div className="max-w-full mx-auto py-6 sm:px-6 lg:px-8"> 
           <div className="md:flex md:items-center md:justify-between mb-8 px-4 sm:px-0">
             <div className="flex-1 min-w-0">
               <h1 className="text-2xl font-bold leading-7 text-foreground sm:text-3xl sm:truncate">
@@ -236,7 +300,7 @@ export default function PublisherDashboardPage() {
             <TabsList className="grid w-full grid-cols-2 sm:grid-cols-2 md:grid-cols-3 mb-6">
               <TabsTrigger value="overview" className="flex items-center gap-2"><LayoutDashboard className="h-4 w-4"/>Overview</TabsTrigger>
               <TabsTrigger value="my-ads" className="flex items-center gap-2"><ListChecks className="h-4 w-4"/>My Ad Units</TabsTrigger>
-              <TabsTrigger value="performance" className="flex items-center gap-2"><BarChartHorizontal className="h-4 w-4"/>Performance</TabsTrigger>
+              <TabsTrigger value="performance" className="flex items-center gap-2"><BarChart3 className="h-4 w-4"/>Performance</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="mt-6 px-4 sm:px-0">
@@ -254,45 +318,32 @@ export default function PublisherDashboardPage() {
                     </Card>
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Impressions (Mock)</CardTitle>
+                        <CardTitle className="text-sm font-medium">Total Impressions</CardTitle>
                          <Eye className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                        <div className="text-2xl font-bold">0</div>
-                        <p className="text-xs text-muted-foreground">Data from your ad units (TBD)</p>
+                        <div className="text-2xl font-bold">{analyticsData?.stats?.activeUsers || '...'}</div>
+                        <p className="text-xs text-muted-foreground">From your GA data</p>
                         </CardContent>
                     </Card>
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Estimated Revenue (Mock)</CardTitle>
+                        <CardTitle className="text-sm font-medium">Estimated Revenue</CardTitle>
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                        <div className="text-2xl font-bold">$0.00</div>
-                        <p className="text-xs text-muted-foreground">Calculated from your ad units (TBD)</p>
+                        <div className="text-2xl font-bold">${'0.00'}</div>
+                        <p className="text-xs text-muted-foreground">Calculated from your ad units</p>
                         </CardContent>
                     </Card>
-                </div>
-                <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-                  <PerformanceChart
-                    title="Top Performing Ad Units (Revenue - Mock)"
-                    description="Based on estimated revenue generated on your platform"
-                    data={[]}
-                  />
-                  <PerformanceChart
-                    title="Ad Impressions by Unit (Mock)"
-                    data={[]}
-                  />
                 </div>
               </div>
             </TabsContent>
             
             <TabsContent value="my-ads" className="mt-6 px-4 sm:px-0">
-              {loadingAdUnits && !currentUser ? <div className="text-center py-10"><p>Please log in to see your ad units.</p></div> :
-               loadingAdUnits ? <div className="text-center py-10 flex items-center justify-center"><Loader2 className="mr-2 h-6 w-6 animate-spin" /> Loading ad units...</div> : 
+              {loadingAdUnits ? <div className="text-center py-10 flex items-center justify-center"><Loader2 className="mr-2 h-6 w-6 animate-spin" /> Loading ad units...</div> : 
                errorAdUnits ? <div className="text-center py-10"><p className="text-destructive">{errorAdUnits}</p></div> :
-               myAdUnits.length === 0 && isAuthenticatedPublisher ? <div className="text-center py-10"><p>No ad units requested or approved yet. Visit 'All Ads' to find ads for your platform.</p></div> :
-               !isAuthenticatedPublisher ? <div className="text-center py-10"><p>Please log in as a publisher to manage your ad units.</p></div> :
+               myAdUnits.length === 0 ? <div className="text-center py-10"><p>No ad units requested or approved yet. Visit 'All Ads' to find ads for your platform.</p></div> :
               (
                 <SelectedAdList 
                   ads={myAdUnits} 
@@ -303,20 +354,64 @@ export default function PublisherDashboardPage() {
               )}
             </TabsContent>
             
-            <TabsContent value="performance" className="mt-6 px-4 sm:px-0">
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Performance Analytics</CardTitle>
-                    <CardDescription>Detailed insights for ad units on your platform.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="mt-4 h-64 bg-muted rounded-lg flex items-center justify-center">
-                      <p className="text-muted-foreground">Detailed performance charts for publisher ad units are under development.</p>
+            <TabsContent value="performance" className="mt-2 p-2 md:p-4 lg:p-6 bg-muted/30 rounded-lg">
+              {loadingAnalytics ? (
+                  <div className="flex flex-col items-center justify-center h-96">
+                    <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                    <p className="mt-4 text-muted-foreground">Fetching your analytics data...</p>
+                  </div>
+              ) : errorAnalytics ? (
+                  <div className="flex flex-col items-center justify-center h-96 bg-destructive/10 border border-destructive/20 rounded-lg p-6">
+                    <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+                    <h3 className="text-xl font-semibold text-destructive">Could Not Load Analytics</h3>
+                    <p className="mt-2 text-sm text-destructive/80 text-center">{errorAnalytics}</p>
+                    <Button variant="outline" size="sm" className="mt-6" onClick={fetchAnalyticsData}>
+                      <RefreshCw className="mr-2 h-4 w-4" /> Try Again
+                    </Button>
+                  </div>
+              ) : analyticsData ? (
+                <>
+                  <ReportHeader title="Reports snapshot" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mt-6">
+                    <StatCard title="Active users" value={analyticsData.stats.activeUsers} icon={<Users className="text-blue-500" />} />
+                    <StatCard title="New users" value={analyticsData.stats.newUsers} icon={<Users className="text-green-500" />} />
+                    <StatCard title="Average engagement time" value={analyticsData.stats.averageEngagementTime} icon={<LineChartIcon className="text-purple-500" />} />
+                    <StatCard title="Active users in last 30 minutes" value={analyticsData.stats.activeUsersLast30Mins || '0'} subtitle="ACTIVE USERS PER MINUTE" smallBarValue={Number(analyticsData.stats.activeUsersLast30Mins || '0') > 0 ? 1 : 0} icon={<LineChartIcon className="text-orange-500" />} />
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mt-4 md:mt-6">
+                    <div className="lg:col-span-2">
+                      <UsersOverTimeChart data={analyticsData.usersOverTime} />
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
+                    <AnalyticsPlaceholderCard title="Insights" message="Stay connected to your business on the go." icon={<TrendingUp />} />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mt-4 md:mt-6">
+                    <UsersByChannelChart data={analyticsData.usersByChannel || []} title="New users by First user primary channel group" />
+                    <SessionsByChannelTable title="Sessions by Session primary channel group" data={analyticsData.sessionsByChannel || { headers: [], rows: [] }} />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mt-4 md:mt-6">
+                    <UsersByCountryCard title="Active users by Country" countryData={analyticsData.usersByCountry || []} />
+                    <UserActivitySmallLineChart title="User activity over time" data={analyticsData.userActivity || []} />
+                    <UserActivityByCohortChart title="User activity by cohort" cohortData={analyticsData.userActivityByCohort?.cohortData || []} />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mt-4 md:mt-6">
+                    <ViewsByPageTable title="Views by Page title and screen class" data={analyticsData.viewsByPage || { headers: [], rows: [] }} />
+                    <EventCountTable title="Event count by Event name" data={analyticsData.eventCountByName || { headers: [], rows: [] }} />
+                    <AnalyticsPlaceholderCard title="Key events by Event name" message="No data available" icon={<ListTree />} />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mt-4 md:mt-6">
+                    <LtvByChannelChart title="Average LTV by First user primary channel group" data={analyticsData.ltvByChannel || []} />
+                    <AnalyticsPlaceholderCard title="Items purchased by Item name" message="No data available" icon={<DollarSign />} />
+                    <AnalyticsPlaceholderCard title="Key events by Platform" message="No data available" isDonutPlaceholder={true} icon={<PieChart />} />
+                  </div>
+                </>
+              ) : (
+                 <div className="flex justify-center items-center h-96"><p>Select the performance tab to load data.</p></div>
+              )}
             </TabsContent>
           </Tabs>
         </div>
@@ -354,5 +449,3 @@ export default function PublisherDashboardPage() {
     </div>
   );
 }
-
-    

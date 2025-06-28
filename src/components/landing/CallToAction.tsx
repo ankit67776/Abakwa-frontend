@@ -2,35 +2,29 @@
 "use client";
 
 import React from 'react';
-import Link from 'next/link'; // Changed from react-router-dom
-import { Button } from '@/components/ui/button'; // Using ShadCN Button
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 const CallToAction: React.FC = () => {
   return (
-    <div className="bg-primary"> {/* Use theme color */}
-      <div className="max-w-2xl mx-auto text-center py-16 px-4 sm:py-20 sm:px-6 lg:px-8">
-        <h2 className="text-3xl font-extrabold text-primary-foreground sm:text-4xl"> {/* Use theme color */}
-          <span className="block">Ready to get started?</span>
-          <span className="block">Sign up for Abakwa today.</span>
+    <div className="bg-muted/30">
+      <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32 lg:flex lg:items-center lg:justify-between lg:px-8">
+        <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+          Ready to get started?<br />
+          Join the future of ad exchange today.
         </h2>
-        <p className="mt-4 text-lg leading-6 text-blue-200"> {/* Consider theme color: primary-foreground/70 ? */}
-          Join thousands of advertisers and publishers who are already using Abakwa to streamline their ad exchange process.
-        </p>
-        <div className="mt-8 flex flex-col sm:flex-row justify-center gap-3">
-          <Link href="/signup?role=advertiser" passHref>
+        <div className="mt-10 flex items-center gap-x-6 lg:mt-0 lg:flex-shrink-0">
+           <Link href="/signup?role=advertiser" passHref>
             <Button
-              variant="outline" // Or a custom variant for on-primary
               size="lg"
-              className="bg-white text-primary hover:bg-gray-100" // Explicitly white for contrast on primary
             >
-              Sign up as Advertiser
+             Sign up as Advertiser
             </Button>
           </Link>
           <Link href="/signup?role=publisher" passHref>
             <Button
-              variant="outline" // Or a custom variant for on-primary
+              variant="outline"
               size="lg"
-              className="bg-white text-primary hover:bg-gray-100" // Explicitly white for contrast on primary
             >
               Sign up as Publisher
             </Button>

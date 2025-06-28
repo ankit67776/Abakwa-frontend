@@ -1,10 +1,9 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, X, ChevronDown } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -19,7 +18,8 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/avatar";
-import { useAuth } from '@/hooks/useAuth'; // Re-enable useAuth
+import { useAuth } from '@/hooks/useAuth';
+import { cn } from '@/lib/utils';
 
 const getInitials = (name?: string) => {
   if (!name) return "?";
@@ -30,7 +30,7 @@ const getInitials = (name?: string) => {
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, isAuthenticated, logout, isLoading } = useAuth(); // Use actual auth state
+  const { user, isAuthenticated, logout, isLoading } = useAuth(); 
   
   const pathname = usePathname();
   const router = useRouter();
@@ -43,47 +43,53 @@ const Header: React.FC = () => {
       if (isLandingPage) {
         setIsScrolled(window.scrollY > 50);
       } else {
-        // For non-landing pages, header is always solid
         setIsScrolled(true); 
       }
     };
 
-    // Always apply scroll listener to correctly set initial state on non-landing pages
     window.addEventListener('scroll', handleScroll);
-    handleScroll(); // Call once to set initial state
+    handleScroll(); 
     
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [isLandingPage, pathname]); // Rerun if isLandingPage or pathname changes
+  }, [isLandingPage, pathname]); 
 
-  // Adjust isTransparentHeader logic
-  // Header is transparent only on landing page, when not scrolled, and mobile menu is not open
   const isTransparentHeader = isLandingPage && !isScrolled && !isMenuOpen;
 
-
-  const navigation = [
+  const baseNavigation = [
     { name: 'Features', href: '/#features' },
     { name: 'How It Works', href: '/#how-it-works' },
-    // { name: 'Pricing', href: '/#pricing' }, 
   ];
+
+  const commonNavigation = [
+    { name: 'All Ads', href: '/all-ads' },
+  ];
+
+  const getNavLinks = () => {
+    let links = [];
+    if (!isAuthenticated) {
+      links.push(...baseNavigation);
+    }
+    links.push(...commonNavigation);
+    if (isAuthenticated && user && (user?.role === 'advertiser' || user?.role === 'publisher')) {
+      links.push({ name: 'Dashboard', href: user.role === 'advertiser' ? '/advertiser/dashboard' : '/publisher/dashboard' });
+    }
+    return links;
+  };
+
+  const currentNavLinks = getNavLinks();
 
   const handleLogout = () => {
     logout(); 
-    // router.push('/login'); // logout in AuthContext already handles redirect
   };
   
-  // Conditional rendering during auth loading can be tricky on the server.
-  // For now, we let it render based on initial (possibly null) auth state.
-  // A more robust solution might involve a skeleton loader or specific loading UI.
-  // if (isLoading && !isAuthenticated && pathname !=='/login' && pathname !=='/signup' && pathname !=='/') { 
-  //    // return null; 
-  // }
-
-
   return (
     <header
-      className={`fixed top-0 w-full z-50 transition-all duration-300 ${isTransparentHeader ? 'bg-transparent' : 'bg-card shadow-sm'}`}
+      className={cn(
+        "fixed top-0 w-full z-50 transition-all duration-300",
+        isTransparentHeader ? 'bg-transparent' : 'bg-card shadow-sm border-b border-border'
+      )}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4 md:space-x-10">
@@ -93,14 +99,14 @@ const Header: React.FC = () => {
               <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
                 <span className="text-primary-foreground font-bold">A</span>
               </div>
-              <span className={`ml-2 text-xl font-bold ${isTransparentHeader ? 'text-white' : 'text-foreground'}`}>Abakwa</span>
+              <span className="ml-2 text-xl font-bold text-foreground">Abakwa</span>
             </Link>
           </div>
 
           <div className="-mr-2 -my-2 md:hidden">
             <button
               type="button"
-              className={`rounded-md p-2 inline-flex items-center justify-center ${isTransparentHeader ? 'text-white hover:bg-white/10' : 'text-muted-foreground hover:bg-muted/50'}`}
+              className="rounded-md p-2 inline-flex items-center justify-center text-muted-foreground hover:bg-muted/50"
               onClick={() => setIsMenuOpen(true)}
             >
               <span className="sr-only">Open menu</span>
@@ -109,35 +115,27 @@ const Header: React.FC = () => {
           </div>
 
           <nav className="hidden md:flex space-x-10">
-            {navigation.map((item) => (
+            {currentNavLinks.map((item) => (
               <Link
                 key={item.name}
                 href={item.href}
-                className={`text-base font-medium ${isTransparentHeader ? 'text-white hover:text-white/80' : 'text-muted-foreground hover:text-foreground'}`}
+                className="text-base font-medium text-muted-foreground hover:text-foreground"
               >
                 {item.name}
               </Link>
             ))}
-             {isAuthenticated && user && (user?.role === 'advertiser' || user?.role === 'publisher') && (
-                <Link href={user.role === 'advertiser' ? '/advertiser/dashboard' : '/publisher/dashboard'} className={`text-base font-medium ${isTransparentHeader ? 'text-white hover:text-white/80' : 'text-muted-foreground hover:text-foreground'}`}>
-                    Dashboard
-                </Link>
-            )}
-             <Link href="/all-ads" className={`text-base font-medium ${isTransparentHeader ? 'text-white hover:text-white/80' : 'text-muted-foreground hover:text-foreground'}`}>
-                All Ads
-            </Link>
           </nav>
 
           <div className="hidden md:flex items-center justify-end md:flex-1 lg:w-0">
             {isLoading ? (
-                <div className="h-10 w-24 bg-muted/50 animate-pulse rounded-md"></div> // Simple skeleton loader
+                <div className="h-10 w-24 bg-muted/50 animate-pulse rounded-md"></div>
             ) : isAuthenticated && user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className={`relative h-10 w-10 rounded-full p-0 focus:ring-2 ${isTransparentHeader ? 'focus:ring-white/50' : 'focus:ring-ring'}`}>
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0 focus:ring-2 focus:ring-ring">
                     <Avatar className="h-9 w-9">
                       <AvatarImage src={(user as any).avatarUrl} alt={user.name} />
-                      <AvatarFallback className={`${isTransparentHeader && !isScrolled ? 'bg-white/20 text-white border border-white/50' : 'bg-muted'}`}>
+                      <AvatarFallback className="bg-muted">
                         {getInitials(user.name)}
                       </AvatarFallback>
                     </Avatar>
@@ -164,13 +162,13 @@ const Header: React.FC = () => {
               </DropdownMenu>
             ) : (
               <>
-                <Link href="/login" className={`whitespace-nowrap text-base font-medium ${isTransparentHeader ? 'text-white hover:text-white/80' : 'text-muted-foreground hover:text-foreground'}`}>
+                <Link href="/login" className="whitespace-nowrap text-base font-medium text-muted-foreground hover:text-foreground">
                   Sign in
                 </Link>
                 <Button
-                  variant={isTransparentHeader ? 'outline' : 'default'}
+                  variant="default"
                   size="sm"
-                  className={isTransparentHeader ? 'ml-8 border-white text-white hover:bg-white hover:text-primary' : 'ml-8'}
+                  className="ml-8"
                   onClick={() => router.push('/signup')}
                 >
                   Sign up
@@ -181,7 +179,6 @@ const Header: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile menu */}
       {isMenuOpen && (
         <div className="absolute top-0 inset-x-0 p-2 transition transform origin-top-right md:hidden">
           <div className="rounded-lg shadow-lg bg-card ring-1 ring-border ring-opacity-5 overflow-hidden">
@@ -206,7 +203,7 @@ const Header: React.FC = () => {
               </div>
             </div>
             <div className="px-2 pt-2 pb-3 space-y-1">
-              {navigation.map((item) => (
+              {currentNavLinks.map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
@@ -216,14 +213,6 @@ const Header: React.FC = () => {
                   {item.name}
                 </Link>
               ))}
-               {isAuthenticated && user && (user?.role === 'advertiser' || user?.role === 'publisher') && (
-                <Link href={user.role === 'advertiser' ? '/advertiser/dashboard' : '/publisher/dashboard'}  onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-accent-foreground hover:bg-accent">
-                    Dashboard
-                </Link>
-            )}
-             <Link href="/all-ads" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-accent-foreground hover:bg-accent">
-                All Ads
-            </Link>
             </div>
             {isLoading ? (
                 <div className="px-5 py-4 border-t border-border">
