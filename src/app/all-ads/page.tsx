@@ -219,7 +219,7 @@ const AllAdsPage: React.FC = () => {
 
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/ad_requests`,
+        `${API_BASE_URL}/requests`,
         {
           ad_id: ad.id, 
         },
