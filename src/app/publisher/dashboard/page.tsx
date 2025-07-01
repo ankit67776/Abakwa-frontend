@@ -201,7 +201,7 @@ export default function PublisherDashboardPage() {
       setErrorAdUnits(null);
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get(`${API_BASE_URL}/ad_requests`, { 
+        const response = await axios.get(`${API_BASE_URL}/requests`, { 
           headers: {
             'Authorization': `Bearer ${token}`,
           },
